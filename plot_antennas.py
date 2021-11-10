@@ -1,16 +1,8 @@
 import csv
-import networkx as nx
-import matplotlib.pyplot as plt
-import math
-import numpy as np
-import geopy.distance
-import pickle
-import progressbar
-from owslib.wfs import WebFeatureService
 
-wfs = WebFeatureService('https://geo.zaanstad.nl/geoserver/wfs?SERVICE=WFS&singleTile=true', version='1.1.0')
-res = wfs.getfeature(typename='geo:antenneregister', sortby=['gemeente'], startindex=10000)
-print(res)
+import matplotlib.pyplot as plt
+import networkx as nx
+
 colors = ['#1f77b4', '#ff7f0e', '#2ca02c', '#d62728', '#9467bd', '#8c564b', '#e377c2', '#7f7f7f', '#bcbd22',
           '#17becf']
 
@@ -30,21 +22,18 @@ def draw_graph(G, ax, colorlist, nodesize):
     nx.draw_networkx_nodes(G, nx.get_node_attributes(G, 'pos'), nodelist = G.nodes(), ax=ax, node_size=nodesize, node_color=colorlist, node_shape='+')
     nx.draw_networkx_edges(G, nx.get_node_attributes(G, 'pos'), edge_color='gray')
 
-First = True
-
-lon = []
 lat = []
+lon = []
 labels = []
 
-with open('antenneregister.csv') as csvfile:
-    csvReader = csv.reader(csvfile, delimiter=';')
+with open('antennes.csv') as csvfile:
+    csvReader = csv.reader(csvfile, delimiter=',')
+    # next(csvReader)
     for row in csvReader:
-        if not First:
-            lon.append(float(row[4]))
-            lat.append(float(row[5]))
-            labels.append(row[2])
-        else:
-            First = False
+        lat.append(float(row[3]))
+        lon.append(float(row[4]))
+        labels.append(row[1])
+
 pointsBS = len(lon)
 xbs, ybs = [], []
 
