@@ -31,9 +31,9 @@ while 1:
         easting, northing = feature[0][3][0][0].text.split(" ")
 
         antennes.append((
-            feature[0][0].text, # gemeente
-            feature[0][1].text, # toepassing
-            feature[0][2].text, # hoogte
+            feature[0][0].text, # minicpality
+            feature[0][1].text, # application
+            feature[0][2].text, # height
             easting, northing, # EPSG 28992 coordinate
         ))
 

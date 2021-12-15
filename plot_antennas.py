@@ -37,11 +37,7 @@ with open('antennes.csv') as csvfile:
 pointsBS = len(lon)
 xbs, ybs = [], []
 
-print(set(labels))
-
-
 colorlist, nodesize, G = make_graph(lat, lon, labels)
-
 fig, ax = plt.subplots()
 draw_graph(G, ax, colorlist, nodesize)
 plt.show()
