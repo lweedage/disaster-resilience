@@ -24,14 +24,12 @@ while 1:
 
 print("All done!")
 
-# some population data is negative
-for i, x in enumerate(new_zip_codes['aantal_inwoners']):
-    if int(x) <= 0:
-        new_zip_codes.at[i, 'aantal_inwoners'] = str(0)
-    # else:
-    #     new_zip_codes.at[i, 'aantal_inwoners'] = int(x)
+new_zip_codes['aantal_inwoners'] = new_zip_codes['aantal_inwoners'].astype(int)
+new_zip_codes.to_file("zip_codes.shp")
 
+p = new_zip_codes.plot(column = 'aantal_inwoners', cmap = 'hot')
+plt.colorbar(p)
+plt.show()
 
-new_zip_codes.to_pickle('zip_codes.pkl')
 
 

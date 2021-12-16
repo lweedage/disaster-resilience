@@ -7,7 +7,6 @@ colors = ['#1f77b4', '#ff7f0e', '#2ca02c', '#d62728', '#9467bd', '#8c564b', '#e3
           '#17becf']
 
 color_dict = {'LTE': colors[0], 'GSM 900': colors[1], 'GSM 1800': colors[2], 'UMTS': colors[3]}
-print(color_dict)
 
 def make_graph(xbs, ybs, labels):
     G = nx.Graph()
@@ -35,7 +34,6 @@ with open('antennes.csv') as csvfile:
         labels.append(row[1])
 
 pointsBS = len(lon)
-xbs, ybs = [], []
 
 colorlist, nodesize, G = make_graph(lat, lon, labels)
 fig, ax = plt.subplots()

@@ -39,7 +39,7 @@ while 1:
 
 print("All done!")
 
-with open("antennes.csv", "w", newline='') as f:
+with open("antennas.csv", "w", newline='') as f:
     writer = csv.writer(f)
     for antenne in antennes:
         writer.writerow(antenne)
