@@ -6,6 +6,8 @@ import networkx as nx
 from shapely.ops import unary_union
 from shapely.geometry import Point
 import random
+import numpy as np
+from channel_model import *
 
 colors = ['#1f77b4', '#ff7f0e', '#2ca02c', '#d62728', '#9467bd', '#8c564b', '#e377c2', '#7f7f7f', '#bcbd22',
           '#17becf']
@@ -45,6 +47,8 @@ def find_data_region(G, zip_codes, zip_code_min, zip_code_max):
     x_users, y_users = get_population(zip_codes_region)
 
     positions = nx.get_node_attributes(G, 'pos')
+    x_bs = [x for x, y in positions]
+    y_bs = [y for x, y in positions]
     subgraph_nodes = []
 
     for node in G.nodes():
@@ -56,7 +60,44 @@ def find_data_region(G, zip_codes, zip_code_min, zip_code_max):
     UE_graph = make_UE_graph(x_users, y_users)      # the simulated users of that region
 
     total_network = nx.compose(BS_graph, UE_graph)
+    links = find_connections(BS_graph, x_bs, y_bs, UE_graph, x_users, y_users)
+    total_network.add_edges_from(links)
+
+
     return total_network
+
+def find_connections(BS_graph, x_bs, y_bs, UE_graph, x_users, y_users):
+    edges = []
+    user_nodes = UE_graph.nodes()
+    coords_users = nx.get_node_attributes(UE_graph, 'pos')
+    height_users = nx.get_node_attributes(UE_graph, 'height')
+
+    MBS_nodes = [n for n, v in BS_graph.nodes(data=True) if v['size'] == 'MBS']
+    SBS_nodes = [n for n, v in BS_graph.nodes(data=True) if v['size'] == 'SBS']
+
+    coords_SBS = {v['pos']: n for n, v in BS_graph.nodes(data=True) if v['size'] == 'SBS'}
+    coords_MBS = {v['pos']: n for n, v in BS_graph.nodes(data=True) if v['size'] == 'MBS'}
+
+    coords_BS = nx.get_node_attributes(BS_graph, 'pos')
+    height_BS = nx.get_node_attributes(BS_graph, 'height')
+
+    for user in user_nodes:
+        SBS, MBS = find_associated_BS(coords_users[user], coords_SBS, coords_MBS)
+        for BS in [SBS, MBS]:
+            SNR = find_SNR(coords_users[user], coords_BS[SBS], height_users[user], height_BS[BS])
+
+
+def find_associated_BS(coords_user, coords_SBS, coords_MBS):
+    SBS = find_closest_BS(coords_user, coords_SBS)
+    MBS = find_closest_BS(coords_user, coords_MBS)
+    return SBS, MBS
+
+
+def find_closest_BS(user, coords_BS):
+    x_bs = np.array([x for x, y in coords_BS.keys()])
+    y_bs = np.array([y for x, y in coords_BS.keys()])
+    index = np.argsort(find_squared_distance(user[0], user[1], x_bs, y_bs))[0]
+    return coords_BS((x_bs[index], y_bs[index]))
 
 def generate_random(number, polygon):   # to generate users per zip code
     points = []
@@ -66,7 +107,6 @@ def generate_random(number, polygon):   # to generate users per zip code
         if polygon.contains(pnt):
             points.append(pnt)
     return points
-
 
 # find all users in the specific zip codes
 def get_population(zip_codes_region):
@@ -81,3 +121,4 @@ def get_population(zip_codes_region):
     xs = [point.x for point in users]
     ys = [point.y for point in users]
     return xs, ys
+
