@@ -2,36 +2,27 @@ import matplotlib.pyplot as plt
 import geopandas as gpd
 import pandas as pd
 import csv
+import generate_users as f
+import find_base_stations as antenna
 
-import functions as f
-import plot_population as p
+# Retrieve zip code population + area data and make a region with specified zip codes
+zip_codes = gpd.read_file('zip_codes.shp')
+zip_codes = zip_codes[~zip_codes['geometry'].isnull()] # Remove rows with empty geometry
 
 # region that we want to investigate:
-zip_code_min, zip_code_max = 7511, 7512
+zip_code_min, zip_code_max = min(zip_codes['postcode']), max(zip_codes['postcode']) # Enschede is 7511 - 7548
+print(zip_code_min, zip_code_max)
 
-# open the antenna data
-lat, lon, labels, height = [], [], [], []
+region, zip_code_region = antenna.find_zip_code_region(zip_code_min, zip_code_max, zip_codes)
+base_stations = antenna.load_bs(region)
 
-with open('antennas.csv') as csvfile:
-    csvReader = csv.reader(csvfile, delimiter=',')
-    # next(csvReader)
-    for row in csvReader:
-        longitude, latitude = float(row[4]), float(row[3])
-        lat.append(latitude)
-        lon.append(longitude)
-        labels.append(row[1])
-        height.append(row[2])
-
-G = f.make_BS_graph(lat, lon, labels, height)
-
-# open the zip_code population data
-zip_codes = gpd.read_file('zip_codes.shp')
-
-# get region-specific data (users included)
-network_twente = f.find_data_region(G, zip_codes, zip_code_min, zip_code_max)
-
+xbs, ybs = [], []
+for BS in base_stations:
+    xbs.append(BS.lat)
+    ybs.append(BS.lon)
 
 fig, ax = plt.subplots()
-f.draw_graph(network_twente, ax)
-plt.legend()
+plt.scatter(xbs, ybs)
+p = zip_code_region.plot(column='popdensity')
+# plt.colorbar(p)
 plt.show()
