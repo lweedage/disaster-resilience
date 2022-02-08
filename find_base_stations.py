@@ -13,7 +13,7 @@ import matplotlib.pyplot as plt
 
 def find_zip_code_region(zip_code_min, zip_code_max, zip_codes):
     zip_code_region_data = zip_codes[(zip_codes['postcode'] >= zip_code_min) & (
-           zip_codes['postcode'] <= zip_code_max) & (zip_codes['postcode'] != 8251)] # zip code 8251 and 8252 are not working (strange geometry).
+           zip_codes['postcode'] <= zip_code_max) ]
     region = gpd.GeoSeries(unary_union(zip_code_region_data['geometry']))
     return region, zip_code_region_data
 
