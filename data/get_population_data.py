@@ -23,6 +23,7 @@ zip_codes['postcode'] = zip_codes['postcode'].astype(int)
 zip_codes['popdensity'] = zip_codes['aantal_inwoners'] / zip_codes['geometry'].area
 zip_codes = zip_codes.filter(['postcode', 'aantal_inwoners', 'popdensity', 'geometry'],
                              axis=1)  # filter data set with only what we need
+zip_codes = zip_codes[~zip_codes['geometry'].isnull()] # Remove rows with empty geometry
 
 zip_codes.to_file("zip_codes.shp")
 

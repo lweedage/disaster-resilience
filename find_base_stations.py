@@ -3,18 +3,17 @@ import util
 import json
 import objects.BaseStation as BSO
 import geopandas as gpd
-from shapely.ops import unary_union
 from shapely.geometry import Point
+from shapely.ops import unary_union
+import pandas
+import numpy as np
+import matplotlib.pyplot as plt
 
 # code from Bart Meyers
 
 def find_zip_code_region(zip_code_min, zip_code_max, zip_codes):
-    # for zip_code in range(zip_code_min, zip_code_max):
-    #     if not zip_codes['postcode' == zip_code].empty:
-    #         print(zip_codes['postcode' == zip_code])
     zip_code_region_data = zip_codes[(zip_codes['postcode'] >= zip_code_min) & (
-            zip_codes['postcode'] <= zip_code_max)]
-
+           zip_codes['postcode'] <= zip_code_max) & (zip_codes['postcode'] != 8251)] # zip code 8251 and 8252 are not working (strange geometry).
     region = gpd.GeoSeries(unary_union(zip_code_region_data['geometry']))
     return region, zip_code_region_data
 
