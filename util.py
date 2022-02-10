@@ -11,9 +11,9 @@ import scipy.stats as st
 import enum
 
 
-def distance(lat1, lon1, lat2, lon2):
+def distance(x1, y1, x2, y2):
     # Rewritten to use EPSG:28992
-    return distance_2d(lat1, lon1, lat2, lon2)
+    return distance_2d(x1, y1, x2, y2)
 
 
 def distance_2d(x1, y1, x2, y2):
@@ -286,6 +286,8 @@ class BaseStationRadioType(enum.Enum):
     """
     NR = enum.auto()
     LTE = enum.auto()
+    GSM = enum.auto()
+
 
 
 @enum.unique
@@ -322,12 +324,3 @@ def get_angle(x1, y1, x2, y2):
     return math.degrees(angle)
 
 
-def test():
-    print(get_angle(1, 1, 0, 0))  # should be 45 degree (pi/4 rad)
-    print(get_angle(-1, 1, 0, 0))  # (3pi/4 rad) 135
-    print(get_angle(1, -1, 0, 0))  # (-pi/4 rad or 7pi/4 rad) -45
-    print(get_angle(2, 2, 1, 1))  # should be 45 degree (pi/4 rad)
-
-
-if __name__ == "__main__":
-    test()

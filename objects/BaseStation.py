@@ -10,11 +10,11 @@ import random
 
 # TODO change mmwave workings
 class BaseStation:
-    def __init__(self, id, radio, lon, lat, height):
+    def __init__(self, id, radio, x, y, height):
         self.id = id
         self.radio = radio
-        self.lon = float(lon)
-        self.lat = float(lat)
+        self.y = float(y)
+        self.x = float(x)
         self.height = float(height)
 
         self.connected_UE = dict()  # Dict(UE: Link)
@@ -26,16 +26,16 @@ class BaseStation:
         self.functional = 1
 
     def __str__(self):
-        lon = self.lon
-        lat = self.lat
+        y = self.y
+        x = self.x
         radio = str(self.radio)
-        startmsg = f"Base station[{self.id}], {lon=}, {lat=}, {radio=}"
+        startmsg = f"Base station[{self.id}], {x=}, {y=}, {radio=}"
         for channel in self.channels:
             startmsg += "\n\t{}".format(str(channel))
         return startmsg
 
     def __repr__(self):
-        return f"BS[{self.id}]: {self.lon=},{self.lat=},{self.radio=},#Channels={len(self.channels)}"
+        return f"BS[{self.id}]: {self.x=},{self.y=},{self.radio=},#Channels={len(self.channels)}"
 
     def malfunction(self, new_functional):
         self.functional = new_functional
@@ -44,10 +44,10 @@ class BaseStation:
     def add_link(self, link: Link.BS_BS_Link):
         self.connected_BS.append(link)
 
-    def add_channel(self, frequency, power, main_direction):
+    def add_channel(self, frequency, power, angle):
         """
         Adds an omnidirectional channel to the basestation
-        :param main_direction: The main direction in which the beam sends
+        :param angle: The main direction in which the beam sends
         :param frequency: The frequency of the channel
         :param power: The transmit power for this channel
         :return: None
@@ -56,7 +56,7 @@ class BaseStation:
         # for c in self.channels:
         #     if c.frequency == frequency:
         #         return
-        channel = Channel(frequency, power, main_direction, self)
+        channel = Channel(frequency, power, angle, self)
         self.channels.append(channel)
 
     def __add__(self, other):
@@ -88,7 +88,7 @@ class BaseStation:
 
         # Calculate the power for the connection with the channel and create the link
         if dist is None:
-            dist = util.distance_2d(self.lon, self.lat, ue.lon, ue.lat)
+            dist = util.distance_2d(self.x, self.y, ue.lon, ue.lat)
         params = models.ModelParameters(dist)
         params.distance_3d = util.distance_3d(self.height, ue.height, d2d=dist)
         params.ue_height = ue.height

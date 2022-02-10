@@ -1,16 +1,18 @@
 from pathlib import Path
 import os
+import pandas as pd
+
+colors = ['#1f77b4', '#ff7f0e', '#2ca02c', '#d62728', '#9467bd', '#8c564b', '#e377c2', '#7f7f7f', '#bcbd22',
+          '#17becf'] * 10
+pd.set_option('display.max_columns', None)
+pd.set_option('display.max_rows', None)
 
 ROOT_DIR = Path(__file__).parent
 
 BS_PATH = os.path.join(ROOT_DIR, "data", "antennas.json")
-CITY_PATH = os.path.join(ROOT_DIR, "data", "city.json")
 
 SAVE_IN_CSV = False
 CREATE_PLOT = False
-SAVE_CSV_PATH = os.path.join(ROOT_DIR, "results", "disaster_power_mmwave_100.csv")
-
-AMOUNT_THREADS = None
 
 UE_CAPACITY_MIN = 10
 UE_CAPACITY_MAX = 100
@@ -67,3 +69,6 @@ INCREASING_REQUESTED_DATA = False
 OFFSET = 10
 DATA_PER_SEV = 10
 WINDOW_SIZE = 10
+
+# Urbanity (stedelijkheid) of zip code data
+URBANITY_TO_SCENARIO = {1: 'UMi', 2: ''}
