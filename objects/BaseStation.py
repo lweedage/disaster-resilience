@@ -11,12 +11,11 @@ import random
 
 # TODO change mmwave workings
 class BaseStation:
-    def __init__(self, id, radio, x, y, height):
+    def __init__(self, id, radio, x, y):
         self.id = id
         self.radio = radio
         self.y = float(y)
         self.x = float(x)
-        self.height = float(height)
 
         self.connected_UE = dict()  # Dict(UE: Link)
         self.connected_BS = list()
@@ -45,9 +44,10 @@ class BaseStation:
     def add_link(self, link: Link.BS_BS_Link):
         self.connected_BS.append(link)
 
-    def add_channel(self, frequency, power, angle):
+    def add_channel(self, height, frequency, power, angle):
         """
         Adds an omnidirectional channel to the basestation
+        :param height: The height of the base station
         :param angle: The main direction in which the beam sends
         :param frequency: The frequency of the channel
         :param power: The transmit power for this channel
@@ -57,7 +57,7 @@ class BaseStation:
         # for c in self.channels:
         #     if c.frequency == frequency:
         #         return
-        channel = Channel(frequency, power, angle, self)
+        channel = Channel(height, frequency, power, angle, self)
         self.channels.append(channel)
 
     def __add__(self, other):
@@ -173,7 +173,8 @@ class BaseStation:
 # TODO add method for reordering channel bandwidth
 # TODO add method for determining if a user can connect if beamforming (due to similar angles)
 class Channel:
-    def __init__(self, frequency, power, bs, main_direction, enabled=True, beamforming=False):
+    def __init__(self, height, frequency, power, bs, main_direction, enabled=True, beamforming=False):
+        self.height = height
         self.frequency = frequency
         self.power = power
         self.main_direction = main_direction

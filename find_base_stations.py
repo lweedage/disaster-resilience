@@ -39,14 +39,14 @@ def load_bs(zip_code_region):
                 else:
                     print(bs.get("HOOFDSOORT")) # there are no other kinds of BSs in this data set (yet)
 
-                h = bs.get('antennas')[str(0)].get("height") # the height of all antenna's is the same for 1 BS.
-                new_bs = BSO.BaseStation(bs.get('ID'), radio, x, y, h)
+                new_bs = BSO.BaseStation(bs.get('ID'), radio, x, y)
                 for key in bs.get("antennas").keys():
+                    height = bs.get('antennas')[str(0)].get("height")
                     antenna = bs.get("antennas").get(key)
                     frequency = antenna.get("frequency")
                     power = antenna.get("power") # in dBW?
                     angle = antenna.get('angle')
-                    new_bs.add_channel(frequency, power, angle)
+                    new_bs.add_channel(height, frequency, power, angle)
                 all_basestations.append(new_bs)
 
     return all_basestations
