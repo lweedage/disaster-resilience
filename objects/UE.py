@@ -1,5 +1,6 @@
 from objects.Link import UE_BS_Link
 import settings
+# code from Bart Meyers
 
 class UserEquipment:
     def __init__(self, id: int, lon: float, lat: float, capacity: int):

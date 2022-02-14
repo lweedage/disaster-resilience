@@ -6,6 +6,7 @@ import settings as settings
 import util as util
 import models as models
 import random
+# code from Bart Meyers
 
 
 # TODO change mmwave workings

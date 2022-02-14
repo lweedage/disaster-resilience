@@ -3,7 +3,7 @@ import dataclasses
 from settings import ACTIVITY
 import util as util
 import settings as settings
-
+# code from Bart Meyers
 
 @dataclasses.dataclass
 class Area:

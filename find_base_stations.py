@@ -23,7 +23,8 @@ def load_bs(zip_code_region):
     with open(BS_PATH) as f:
         bss = json.load(f)
         # Loop over base-stations
-        for bs in bss:
+        for key in bss.keys():
+            bs = bss[key]
             x = float(bs.get('x'))
             y = float(bs.get('y'))
             if zip_code_region.contains(Point(x, y)).bool():
@@ -38,12 +39,13 @@ def load_bs(zip_code_region):
                 else:
                     print(bs.get("HOOFDSOORT")) # there are no other kinds of BSs in this data set (yet)
 
-                h = bs.get('antennes')[0].get("height") # the height of all antenna's is the same for 1 BS.
+                h = bs.get('antennas')[str(0)].get("height") # the height of all antenna's is the same for 1 BS.
                 new_bs = BSO.BaseStation(bs.get('ID'), radio, x, y, h)
-                for antenna in bs.get("antennes"):
-                    frequency = util.str_to_float(antenna.get("frequency"))
-                    power = util.str_to_float(antenna.get("power")) # in dBW?
-                    angle = util.str_to_float(antenna.get('angle'))
+                for key in bs.get("antennas").keys():
+                    antenna = bs.get("antennas").get(key)
+                    frequency = antenna.get("frequency")
+                    power = antenna.get("power") # in dBW?
+                    angle = antenna.get('angle')
                     new_bs.add_channel(frequency, power, angle)
                 all_basestations.append(new_bs)
 

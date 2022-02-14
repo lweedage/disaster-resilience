@@ -1,5 +1,6 @@
 import models
 import settings
+# code from Bart Meyers
 
 
 class BS_BS_Link:

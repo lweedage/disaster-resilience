@@ -287,6 +287,7 @@ class BaseStationRadioType(enum.Enum):
     NR = enum.auto()
     LTE = enum.auto()
     GSM = enum.auto()
+    UMTS = enum.auto()
 
 
 
@@ -322,5 +323,14 @@ def get_angle(x1, y1, x2, y2):
     y = y1 - y2
     angle = math.atan2(y, x)
     return math.degrees(angle)
+
+def find_cities(municipality):
+    with open("data/cities_per_municipality") as f:
+        data = f.read()
+        data = data.split('\n')
+    for line in data:
+        line = line.split(':')
+        if line[0] == municipality:
+            return line[1].split(',')
 
 
