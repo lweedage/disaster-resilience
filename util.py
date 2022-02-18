@@ -145,11 +145,12 @@ def connected_ue_bs(base_stations):
     return sum([len(bs.connected_UE) for bs in base_stations]) / len(base_stations)
 
 
+
 def to_pwr(db):
     """
-    Convert dBm to mW
-    :param db: Decibel dBm
-    :return: power in mW
+    Convert dB to W
+    :param db: Decibel dB
+    :return: power in W
     """
     return 10 ** (db / 10)
 

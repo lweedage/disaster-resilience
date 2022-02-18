@@ -1,5 +1,6 @@
 from shapely.geometry import Point
 import random
+import objects.UE as UE
 
 def generate_random(number, polygon):   # to generate users per zip code
     points = []
@@ -23,3 +24,10 @@ def get_population(zip_codes_region):
     ys = [point.y for point in users]
     return xs, ys
 
+def generate_users(zip_codes_region):
+    all_users = list()
+    xs, ys = get_population(zip_codes_region)
+    for i in range(len(xs)):
+        new_user = UE.UserEquipment(i, xs[i], ys[i], rate_requirement = 5)
+        all_users.append(new_user)
+    return all_users

@@ -25,7 +25,7 @@ class BS_BS_Link:
 
 
 class UE_BS_Link:
-    def __init__(self, ue, base_station, channel, power, dist):
+    def __init__(self, ue, base_station, channel, power, dist, frequency):
         """
         :param ue:
         :param base_station:
@@ -35,6 +35,7 @@ class UE_BS_Link:
         self.power = power
         self.channel = channel
         self.distance = dist
+        self.frequency = frequency
 
     @property
     def needed_bandwidth(self):

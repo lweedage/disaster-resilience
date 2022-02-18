@@ -18,10 +18,6 @@ CREATE_PLOT = False
 UE_CAPACITY_MIN = 10
 UE_CAPACITY_MAX = 100
 
-SEVERITY_ROUNDS = 10
-ROUNDS_PER_SEVERITY = 4
-ROUNDS_PER_USER = 75
-
 MINIMUM_POWER = -80  # dbm
 
 # CITY SPECIFIC PARAMETERS
@@ -34,22 +30,11 @@ AVG_STREET_WIDTH = 10
 # BASE STATION PROPERTIES
 BS_RANGE = 5000  # maximum range of base stations based on the fact that UMa and UMi models cannot exceed 5km
 
-MCL = 70  # in dbm
-HEIGHT_ABOVE_BUILDINGS = 20  # Average height a BS is above buildings (used for LTE)
-CARRIER_FREQUENCY = 2000  # TODO remove?
-BASE_POWER = 43  # TODO remove
-G_TX = 15  # dB
-G_RX = 0  # dB
+MCL = 70  # in dbm #minimum coupling loss?
+
 
 CHANNEL_BANDWIDTHS = [20, 15, 10, 5, 3, 1.4]
 SIGNAL_NOISE = -100  # dBm
-
-# mmWave channel properties
-MMWAVE_PROBABILITY = 1
-MMWAVE_FREQUENCY = 26000  # 26GHz in MHz
-MMWAVE_POWER = 60  # dBm
-BEAMFORMING_GAIN = G_TX + 10  # dB
-BEAMFORMING_CLEARANCE = 10  # degrees around the beam
 
 # User equipment properties
 UE_HEIGHT = 1.5  # height in meters

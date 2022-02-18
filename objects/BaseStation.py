@@ -66,7 +66,7 @@ class BaseStation:
         other.add_link(new_link)
         return new_link
 
-    def add_ue(self, ue, dist=None):
+    def add_ue(self, ue):
         """
         Adds a user connection to the basestation
         :param ue: user equipment to add
@@ -88,23 +88,26 @@ class BaseStation:
             return False
 
         # Calculate the power for the connection with the channel and create the link
-        if dist is None:
-            dist = util.distance_2d(self.x, self.y, ue.lon, ue.lat)
-        params = models.ModelParameters(dist)
-        params.distance_3d = util.distance_3d(self.height, ue.height, d2d=dist)
-        params.ue_height = ue.height
-        params.self_height = self.height
-        params.area = self.area.area_type
-        params.avg_building_height = self.area.avg_building_height
-        params.avg_street_width = self.area.avg_street_width
-        params.frequency = channel.frequency
-        # TODO add beamforming model when needed
+        distance_2d = util.distance_2d(self.x, self.y, ue.lon, ue.lat)
+        distance_3d = util.distance_3d(self.height, ue.height, d2d=distance_2d)
+        params = util.find_ModelParameters(distance_2d, distance_3d, ue.height, self.height)
+        distance_2d: float
+        distance_3d: float
+        los: bool
+        frequency: float  # in Hz
+        bs_height: float
+
+
+        params = models.ModelParameters(distance_2d, distance_3d, los, self.frequency, self.height)
+
         power = models.received_power(self.radio, channel.power, params)
+
         if power < util.to_pwr(settings.MINIMUM_POWER):
             # print(f"power too low: {power=}; min power = {util.to_pwr(settings.MINIMUM_POWER)}")
             return False
-        new_link = Link.UE_BS_Link(ue, self, channel, power, dist)
+        new_link = Link.UE_BS_Link(ue, self, channel, power, distance_2d)
         channel_add = channel.add_device(ue, new_link.bandwidthneeded, self)
+
         # Additional test that should never trigger
         # if device failed to be added to the channel or the BS overflows revert and return False
         if not channel_add:
@@ -118,19 +121,6 @@ class BaseStation:
         self.connected_UE[ue] = new_link
         ue.set_base_station(new_link)
         return True
-
-    @DeprecationWarning
-    def direct_capacities(self):
-        """
-        DO NOT USE: DOES NOT DO Usefull stuff
-        original use: redistribute connected ue over the channels
-        :return:
-        """
-        self.create_new_channels()
-        self.connected_UE = sorted(self.connected_UE, key=lambda x: x.link.bandwidthneeded, reverse=True)
-        for UE in self.connected_UE:
-            channel = max(self.channels, key=lambda c: (c.productivity, c.band_left))
-            channel.add_device(UE, UE.link.bandwidthneeded, self)
 
     @property
     def overflow(self):
@@ -173,7 +163,7 @@ class BaseStation:
 # TODO add method for reordering channel bandwidth
 # TODO add method for determining if a user can connect if beamforming (due to similar angles)
 class Channel:
-    def __init__(self, height, frequency, power, bs, main_direction, enabled=True, beamforming=False):
+    def __init__(self, height, frequency, power, main_direction, bs, enabled=True, beamforming=False):
         self.height = height
         self.frequency = frequency
         self.power = power
@@ -268,7 +258,7 @@ class Channel:
         return msg
 
     def __repr__(self):
-        return f"Channel[{self.frequency}]: {self.enabled=}; #devices = {len(self.devices)}; power = {self.power} "
+        return f"Channel[{self.frequency/1e9}]: main direction = {self.main_direction}; power = {self.power};  "
 
     def __eq__(self, other):
         if not isinstance(other, Channel):

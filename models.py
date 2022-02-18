@@ -10,10 +10,10 @@ import settings
 @dataclass
 class ModelParameters:
     distance_2d: float
-    distance_3d: float = None
-    los: bool = None
-    frequency: float = settings.CARRIER_FREQUENCY  # in MHz
-    bs_height: float = settings.HEIGHT_ABOVE_BUILDINGS
+    distance_3d: float
+    los: bool
+    frequency: float  # in Hz
+    bs_height: float
     ue_height: float = settings.UE_HEIGHT
     area: util.AreaType = util.AreaType.UMA
     avg_building_height: float = settings.AVG_BUILDING_HEIGHT
@@ -28,7 +28,7 @@ class ModelParameters:
                                self.ue_height, self.area, self.avg_building_height, self.avg_street_width)
 
 
-def pathloss_nr(params: ModelParameters):
+def pathloss(params: ModelParameters):
     """
     Determines the path-loss for 5G radio types.
     :param params: parameter class containing needed parameters
@@ -80,7 +80,7 @@ def pathloss_nr(params: ModelParameters):
                           + 20 * np.log10(params.frequency) - (3.2 * np.log10(11.75 * params.ue_height) - 4.97)
                 p = params.__copy__()
                 p.los = True
-                los_pl = pathloss_nr(p)
+                los_pl = pathloss(p)
                 return max(los_pl, nlos_pl) + atmospheric_attenuation(params.frequency,
                                                                       params.distance_2d) + shadow_fading(8)
             else:
@@ -96,15 +96,15 @@ def pathloss_rma_los_pl1(distance, avg_building_height, frequency):
            0.002 * np.log10(avg_building_height) * distance
 
 
-def pathloss_urban_los(d_2d, d_3d, f, ue_h, bs_h, a, b, c):
+def pathloss_urban_los(d_2d, d_3d, freq, ue_height, bs_height, a, b, c):
     """
     Determine pathloss under urban LoS conditions.
     For the parameters see paper: they differ for UMi/UMa scenarios
     :param d_2d: 2d distance
     :param d_3d: 3d distance
-    :param f: frequency
-    :param ue_h: UE height
-    :param bs_h: BS height
+    :param freq: frequency (in Hz)
+    :param ue_height: UE height
+    :param bs_height: BS height
     :param a: parameter alpha
     :param b: parameter beta
     :param c: parameter gamma
@@ -112,16 +112,16 @@ def pathloss_urban_los(d_2d, d_3d, f, ue_h, bs_h, a, b, c):
     """
     if d_2d < 10:
         return settings.MCL
-    elif d_2d <= breakpoint_distance(f, bs_h, ue_h):
-        return a + b * np.log10(d_3d) + 20 * np.log10(f)
+    elif d_2d <= breakpoint_distance(freq, bs_height, ue_height):
+        return a + b * np.log10(d_3d) + 20 * np.log10(freq/1e9)
     elif d_2d <= 5000:
-        return a + 40 * np.log10(d_3d) + 20 * np.log10(f) \
-               - c * np.log10(breakpoint_distance(f, bs_h, ue_h) ** 2 + (bs_h - ue_h) ** 2)
+        return a + 40 * np.log10(d_3d) + 20 * np.log10(freq/1e9) \
+               - c * np.log10(breakpoint_distance(freq, bs_height, ue_height) ** 2 + (bs_height - ue_height) ** 2)
     else:
         raise ValueError("Pathloss urban los model does not function for d_2d>5km")
 
 
-def pathloss_urban_nlos(d_3d, f, ue_h, a, b, c, d):
+def pathloss_urban_nlos(d_3d, freq, ue_height, a, b, c, d):
     """
     Determines pathloss for urban nlos scenario
     :param d_3d: 3D distance
@@ -133,19 +133,8 @@ def pathloss_urban_nlos(d_3d, f, ue_h, a, b, c, d):
     :param d: parameter delta
     :return:
     """
-    return a + b * np.log10(d_3d) + c * np.log10(f) - d * (ue_h - 1.5)
 
-
-def pathloss_lte(params):
-    """
-    Calculates the path-loss for LTE towers.
-    :param params: model parameters
-    :return: path-loss in dBW
-    """
-    hab = settings.HEIGHT_ABOVE_BUILDINGS
-    MODEL_A = -18 * np.log10(hab) + 21 * np.log10(params.frequency) + 80
-    MODEL_B = 40 * (1 - 4 * (10 ** -3) * hab)
-    return (MODEL_A + MODEL_B * math.log10(params.distance_2d / 1000)) + math.sqrt(10) * np.random.random()
+    return a + b * np.log10(d_3d) + c * np.log10(freq/1e9) - d * (ue_height - 1.5)
 
 
 def breakpoint_distance(frequency, bs_height, ue_height=settings.UE_HEIGHT):
@@ -168,11 +157,11 @@ def atmospheric_attenuation(frequency, distance):
 def shadow_fading(sd):
     """
     Determines the shadow fading part of the 5G model.
-    This value is picked from a log-normal distribution with standard deviation sd
+    This value is picked from a normal distribution with standard deviation sd
     :param sd: the standard deviation of the distribution
     :return:
     """
-    return float(np.random.lognormal(0, sd, None))
+    return float(np.random.normal(0, sd))
 
 
 def los_probability(d_2d, area, ue_h):
@@ -206,7 +195,7 @@ def los_probability(d_2d, area, ue_h):
         raise TypeError("Unknown area type")
 
 
-def received_power(radio, tx, params, g_tx=settings.G_TX, g_rx=settings.G_RX):
+def received_power(radio, tx, params):
     """
     Calculates the power received
     :param radio: radio type (LTE, 5G NR, mmWave)
@@ -216,13 +205,12 @@ def received_power(radio, tx, params, g_tx=settings.G_TX, g_rx=settings.G_RX):
     :return: power received in mW
     """
     if radio == util.BaseStationRadioType.LTE:
-        return util.to_pwr(tx - max(pathloss_lte(params) - settings.G_TX - settings.G_RX, settings.MCL))
+        return util.to_pwr(tx - max(pathloss(params), settings.MCL))
     elif radio == util.BaseStationRadioType.NR:
         # ModelParams contains frequency in MHz while the models use GHz, change the value here
-        params.frequency = params.frequency / 1000
         # Determine LOS condition and add to parameters for the model
         params.los = los_probability(params.distance_2d, params.area, params.ue_height)
-        return util.to_pwr(tx - pathloss_nr(params) + g_tx + g_rx)
+        return util.to_pwr(tx - pathloss(params))
 
 
 def snr(power, noise=settings.SIGNAL_NOISE):
@@ -234,6 +222,9 @@ def snr(power, noise=settings.SIGNAL_NOISE):
     """
     return power / util.to_pwr(noise)
 
+def sinr(power, noise=settings.SIGNAL_NOISE):
+    interference = 3
+    return power / (interference + noise)
 
 def shannon_capacity(snr, bandwidth):
     """
@@ -242,16 +233,7 @@ def shannon_capacity(snr, bandwidth):
     :param bandwidth:
     :return:
     """
-    return bandwidth * shannon_second_param(snr)
-
-
-def shannon_second_param(snr):
-    """
-    Calculates the second parameter of the shannon capacity formula
-    :param snr: signal-to-noise ratio
-    :return:
-    """
-    return math.log2(1 + snr)
+    return bandwidth * math.log2(1 + snr)
 
 
 def beamforming():

@@ -11,8 +11,8 @@ import matplotlib.pyplot as plt
 
 # code from Bart Meyers
 
-def find_zip_code_region(zip_codes, city=None):
-    if city == None:
+def find_zip_code_region(zip_codes, city=['Netherlands']):
+    if city == ['Netherlands']:
         city = list(zip_codes['municipali'])
     zip_code_region_data = zip_codes[zip_codes['municipali'].isin(city)]
     region = gpd.GeoSeries(unary_union(zip_code_region_data['geometry']))

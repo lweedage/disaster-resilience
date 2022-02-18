@@ -3,11 +3,11 @@ import settings
 # code from Bart Meyers
 
 class UserEquipment:
-    def __init__(self, id: int, lon: float, lat: float, capacity: int):
+    def __init__(self, id: int, x: float, y: float, rate_requirement: float):
         self.id = id
-        self.requested_capacity = capacity
-        self.lon = lon
-        self.lat = lat
+        self.rate_requirement = rate_requirement
+        self.x = x
+        self.y = y
         self.link = None
         self.height = settings.UE_HEIGHT
 
@@ -19,7 +19,7 @@ class UserEquipment:
         return self.link.snr
 
     def __str__(self):
-        return "UE[{}], requested capacity: {}, lon: {}, lat: {}".format(self.id, self.requested_capacity, self.lon, self.lat)
+        return "UE[{}], requested capacity: {}, x: {}, y: {}".format(self.id, self.rate_requirement, self.x, self.y)
 
     def reset(self):
         self.link = None
