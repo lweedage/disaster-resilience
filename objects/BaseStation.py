@@ -11,11 +11,13 @@ import random
 
 # TODO change mmwave workings
 class BaseStation:
-    def __init__(self, id, radio, x, y):
+    def __init__(self, id, radio, x, y, provider = '', small_cell = False):
         self.id = id
         self.radio = radio
         self.y = float(y)
         self.x = float(x)
+        self.small_cell = bool(small_cell)
+        self.provider = str(provider)
 
         self.connected_UE = dict()  # Dict(UE: Link)
         self.connected_BS = list()
@@ -44,20 +46,17 @@ class BaseStation:
     def add_link(self, link: Link.BS_BS_Link):
         self.connected_BS.append(link)
 
-    def add_channel(self, height, frequency, power, angle):
+    def add_channel(self, height, frequency, power, angle, bandwidth):
         """
         Adds an omnidirectional channel to the basestation
+        :param bandwidth:
         :param height: The height of the base station
         :param angle: The main direction in which the beam sends
         :param frequency: The frequency of the channel
         :param power: The transmit power for this channel
         :return: None
         """
-        # Check if channel exist already
-        # for c in self.channels:
-        #     if c.frequency == frequency:
-        #         return
-        channel = Channel(height, frequency, power, angle, self)
+        channel = Channel(height, frequency, power, angle, bandwidth, self)
         self.channels.append(channel)
 
     def __add__(self, other):
@@ -155,19 +154,16 @@ class BaseStation:
         self.create_new_channels()
         self.connected_UE.clear()
 
-    @DeprecationWarning
-    def get_copy(self):
-        new_bs = BaseStation(self.id, self.radio, self.lon, self.lat, self.height, self.area)
-
 
 # TODO add method for reordering channel bandwidth
 # TODO add method for determining if a user can connect if beamforming (due to similar angles)
 class Channel:
-    def __init__(self, height, frequency, power, main_direction, bs, enabled=True, beamforming=False):
+    def __init__(self, height, frequency, power, main_direction, bs, bandwidth, beamforming=False):
         self.height = height
         self.frequency = frequency
         self.power = power
         self.main_direction = main_direction
+        self.bandwidth = bandwidth
 
         self.devices = dict()
         self.desired_band = dict()
@@ -177,9 +173,7 @@ class Channel:
 
         self.bs = bs
 
-        self.enabled = enabled
-        self.max_devices = math.floor(settings.CHANNEL_BANDWIDTHS[0]
-                                      / settings.CHANNEL_BANDWIDTHS[len(settings.CHANNEL_BANDWIDTHS) - 1])
+
 
     # TODO add angle to angles list if channel is mmWave
     def add_device(self, ue, minimum_bandwidth, bs):
@@ -227,18 +221,6 @@ class Channel:
             self.devices[device] = new_band
 
         return True
-
-    @property
-    def band_left(self):
-        if self.beamforming:
-            # Beamforming has one beam per user with the full bandwidth available (for each angle).
-            return settings.CHANNEL_BANDWIDTHS[0]
-        return settings.CHANNEL_BANDWIDTHS[0] - sum([self.devices[d] for d in self.devices])
-
-    def has_band_left(self):
-        if self.beamforming:
-            return self.enabled
-        return self.enabled and len(self.devices) < self.max_devices
 
     @property
     def connected_devices(self):

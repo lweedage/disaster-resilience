@@ -24,6 +24,8 @@ def load_bs(zip_code_region):
         bss = json.load(f)
         # Loop over base-stations
         for key in bss.keys():
+            small_cell = False
+
             bs = bss[key]
             x = float(bs.get('x'))
             y = float(bs.get('y'))
@@ -44,9 +46,14 @@ def load_bs(zip_code_region):
                     height = bs.get('antennas')[str(0)].get("height")
                     antenna = bs.get("antennas").get(key)
                     frequency = antenna.get("frequency")
-                    power = antenna.get("power") # in dBW?
                     angle = antenna.get('angle')
-                    new_bs.add_channel(height, frequency, power, angle)
+                    power = antenna.get("power") # in dBW?
+                    provider, bandwidth = util.find_provider(frequency/1e6)
+
+
+                    new_bs.add_channel(height, frequency, power, angle, bandwidth)
+                new_bs.provider = provider
+                new_bs.small_cell = small_cell
                 all_basestations.append(new_bs)
 
     return all_basestations

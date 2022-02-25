@@ -326,7 +326,7 @@ def get_angle(x1, y1, x2, y2):
     return math.degrees(angle)
 
 def find_cities(municipality):
-    with open("data/cities_per_municipality") as f:
+    with open("data/cities_per_province") as f:
         data = f.read()
         data = data.split('\n')
     for line in data:
@@ -335,3 +335,17 @@ def find_cities(municipality):
             return line[1].split(',')
 
 
+def find_provider(frequency): # frequency in MHz
+    frequency_dict = {(758, 768): 'Vodafone', (768, 778): 'KPN', (778, 788): 'T-Mobile', (791, 801): 'T-Mobile', (801, 811): 'Vodafone', (811, 821): 'KPN', (925, 935): 'Vodafone', (935, 945): 'KPN', (945, 960): 'T-Mobile',
+     (1452, 1467): 'Vodafone', (1467, 1482): 'KPN', (1482, 1492): 'T-Mobile', (1805, 1825): 'Vodafone', (1825, 1845): 'KPN', (1845, 1875): 'T-Mobile', (2110, 2124.9): 'Vodafone', (2124.9, 2139.7): 'KPN',
+     (2139.7, 2149.7): 'T-Mobile', (2149.7, 2154.7): 'KPN', (2154.7, 2159.7): 'Vodafone', (2159.7, 2170): 'T-Mobile', (2110, 2130): 'Vodafone', (2130, 2150): 'T-Mobile', (2150, 2170): 'KPN', (2565, 2590): 'T-Mobile',
+                      (2590, 2620): 'KPN', (2620, 2630): 'Vodafone', (2630, 2650): 'Vodafone', (2650, 2655): 'T-Mobile', (2655, 2665): 'KPN', (2665, 2685): 'T-Mobile', (2685, 2690): 'T-Mobile'}
+    if frequency == 3275: # one BS in Poeldijk has the wrong frequency in the data set - this should be 2672.5 MHz
+        frequency = 2672.5
+    for key, provider in frequency_dict.items():
+        (min_freq, max_freq) = key
+        if min_freq <= frequency < max_freq:
+            return provider, (max_freq - frequency)*10**6
+
+    print(frequency)
+    return 'None', 0

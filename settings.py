@@ -32,29 +32,8 @@ BS_RANGE = 5000  # maximum range of base stations based on the fact that UMa and
 
 MCL = 70  # in dbm #minimum coupling loss?
 
-
-CHANNEL_BANDWIDTHS = [20, 15, 10, 5, 3, 1.4]
-SIGNAL_NOISE = -100  # dBm
+SIGNAL_NOISE = -100  # dBm #todo change!
 
 # User equipment properties
 UE_HEIGHT = 1.5  # height in meters
 
-# RISKS ENABLED
-# if a large disaster occurred, for instance a natural disaster or a depending failure
-LARGE_DISASTER = True
-POWER_OUTAGE = True
-RADIUS_PER_SEVERITY = 1000
-
-# malicious attacks on a certain region, for instance a DDoS
-MALICIOUS_ATTACK = False
-PERCENTAGE_BASE_STATIONS = 0.5
-FUNCTIONALITY_DECREASED_PER_SEVERITY = 0.1
-
-# increasing requested data
-INCREASING_REQUESTED_DATA = False
-OFFSET = 10
-DATA_PER_SEV = 10
-WINDOW_SIZE = 10
-
-# Urbanity (stedelijkheid) of zip code data
-URBANITY_TO_SCENARIO = {1: 'UMi', 2: ''}

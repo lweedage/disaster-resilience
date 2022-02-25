@@ -31,11 +31,9 @@ zip_codes = gpd.read_file('zip_codes.shp')
 
 for i, row in zip_codes.iterrows():
     print(i)
-    if zip_codes.at[i, 'stedelijkh'] in [str(1), str(2)]:
-        zip_codes.at[i, 'scenario'] = 'UMi'
-    elif zip_codes.at[i, 'stedelijkh'] in [str(3), str(4)]:
+    if zip_codes.at[i, 'stedelijkh'] in [str(1), str(2), str(3)]:
         zip_codes.at[i, 'scenario'] = 'UMa'
-    else:
+    elif zip_codes.at[i, 'stedelijkh'] in [str(4), str(5)]:
         zip_codes.at[i, 'scenario'] = 'RMa'
 
 zip_codes.to_file("zip_codes_with_scenarios.shp")

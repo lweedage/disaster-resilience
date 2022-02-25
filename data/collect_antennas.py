@@ -9,17 +9,14 @@ def find_frequency(freq):
         freq = freq.split(' ')
         if '-' in freq[0]:
             freq[0] = freq[0].split('-')[0]  # if there is a range of frequencies, we take the lowest value
-
         if freq[1] == 'GHz':
             frequency = float(freq[0]) * 10 ** 9
         elif freq[1] == 'MHz':
             frequency = float(freq[0]) * 10 ** 6
         elif freq[1] == 'kHz':
             frequency = float(freq[0]) * 10 ** 3
-
         else:
             print('not known frequency: ', freq)
-
         return frequency
 
 
@@ -69,6 +66,7 @@ def fetch_slice(xmin, mapserver):
         entry['type'] = feature['attributes']['HOOFDSOORT']
         entry['x'] = float(feature['geometry']['x'])
         entry['y'] = float(feature['geometry']['y'])
+
         results[feature['attributes']['ID']] = entry
 
     pff_IDs = [str(feature['attributes']['ID']) for feature in r['features']]
@@ -111,21 +109,22 @@ def fetch_slice(xmin, mapserver):
                     ants[i] = ant
                     i += 1
 
+
                 results[ID]['antennas'] = ants
         return results
 
 
 total_results = dict()
+inp = int(input('Mapserver? can be 1, 2, 4, 5, 7, 8, 10, 11'))
 
-for xmin in range(0, 305000, 5000):
+for xmin in range(0, 300000, 5000):
     print('Fetching from x =', xmin / 1000, 'till', (xmin + 5100) / 1000, 'km')
-
-    for mapserver in [7]: #1, 2, 4, 5, 7, 8, 10, 11]:  # different layers of the map: (1,2)GSM/(4,5)UMTS/(7,8)LTE/(10,11)NR
+    for mapserver in [inp]: #1, 2, 4, 5, 7, 8, 10, 11]:  # different layers of the map: (1,2)GSM/(4,5)UMTS/(7,8)LTE/(10,11)NR
         results = fetch_slice(xmin, mapserver)
         if results:
             total_results.update(results)
 
-with open('antennasLTE.json', 'w') as f:
+with open(str('antennas=' + str(mapserver) + '.json'), 'w') as f:
     json.dump(total_results, f)
 
 # fetch_slice(175100, 1)

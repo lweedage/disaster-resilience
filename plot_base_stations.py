@@ -36,6 +36,8 @@ for BS in base_stations:
         xbs_NR.append(BS.x)
         ybs_NR.append(BS.y)
 
+
+
 fig, ax = plt.subplots()
 p = zip_code_region.plot(column='scenario', ax=ax, legend=True)
 ax.scatter(xbs_UMTS, ybs_UMTS, color=colors[0], marker='+', label='UMTS')
