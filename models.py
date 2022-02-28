@@ -1,9 +1,10 @@
+import math
 from dataclasses import dataclass
 import numpy as np
-import math
-
-import util
 import settings
+import util
+
+
 # code from Bart Meyers
 
 
@@ -113,9 +114,9 @@ def pathloss_urban_los(d_2d, d_3d, freq, ue_height, bs_height, a, b, c):
     if d_2d < 10:
         return settings.MCL
     elif d_2d <= breakpoint_distance(freq, bs_height, ue_height):
-        return a + b * np.log10(d_3d) + 20 * np.log10(freq/1e9)
+        return a + b * np.log10(d_3d) + 20 * np.log10(freq / 1e9)
     elif d_2d <= 5000:
-        return a + 40 * np.log10(d_3d) + 20 * np.log10(freq/1e9) \
+        return a + 40 * np.log10(d_3d) + 20 * np.log10(freq / 1e9) \
                - c * np.log10(breakpoint_distance(freq, bs_height, ue_height) ** 2 + (bs_height - ue_height) ** 2)
     else:
         raise ValueError("Pathloss urban los model does not function for d_2d>5km")
@@ -134,7 +135,7 @@ def pathloss_urban_nlos(d_3d, freq, ue_height, a, b, c, d):
     :return:
     """
 
-    return a + b * np.log10(d_3d) + c * np.log10(freq/1e9) - d * (ue_height - 1.5)
+    return a + b * np.log10(d_3d) + c * np.log10(freq / 1e9) - d * (ue_height - 1.5)
 
 
 def breakpoint_distance(frequency, bs_height, ue_height=settings.UE_HEIGHT):
@@ -213,18 +214,27 @@ def received_power(radio, tx, params):
         return util.to_pwr(tx - pathloss(params))
 
 
-def snr(power, noise=settings.SIGNAL_NOISE):
+def snr(user_coords, base_station, channel):
     """
-    Calculates signal to noise ratio
+    Calculates signal to noise ratio in dB
     :param power: power of the signal in mW
-    :param noise: noise in dbm
     :return: signal to noise ratio in db
     """
-    return power / util.to_pwr(noise)
+    bs_coords = (base_station.x, base_station.y)
+    power = channel.power
+    boresight_angle = channel.main_direction
+    beamwidth = channel.beamwidth
+    bandwidth = channel.bandwidth
+    radio = base_station.radio
 
-def sinr(power, noise=settings.SIGNAL_NOISE):
-    interference = 3
-    return power / (interference + noise)
+    gain = find_gain(user_coords, bs_coords, boresight_angle, beamwidth)
+    noise = find_noise(bandwidth, radio)
+    return power + gain - noise
+
+def sinr(user_coords, base_station, channel):
+    SNR = snr(user_coords, base_station, channel)
+    interference = 3  # todo: change this!
+    return SNR - interference
 
 def shannon_capacity(snr, bandwidth):
     """
@@ -235,7 +245,6 @@ def shannon_capacity(snr, bandwidth):
     """
     return bandwidth * math.log2(1 + snr)
 
-
 def beamforming():
     """
     Simplistic model for beamforming
@@ -244,12 +253,59 @@ def beamforming():
     """
     return settings.BEAMFORMING_GAIN
 
+def thermal_noise(bandwidth):
+    return settings.BOLTZMANN * settings.TEMPERATURE * bandwidth
 
-def test():
-    params = ModelParameters(500, util.distance_3d(1.5, 30, d2d=500), True, 26000)
-    pwr = received_power(util.BaseStationRadioType.NR, 60, params)
-    print(util.to_db(pwr))
+def find_noise(bandwidth, radio):
+    if radio == util.BaseStationRadioType.NR:
+        noise_figure = 7.8
+    else:
+        noise_figure = 5
+    return thermal_noise(bandwidth) + noise_figure
 
+def find_gain(coord_1, coord_2, boresight_angle, beamwidth_ml):
+    alpha = find_misalignment(boresight_angle, find_geo(coord_1, coord_2))
+    w = beamwidth_ml / 2.58
+    G0 = 20 * math.log10(1.62 / math.sin(math.radians(w / 2)))
 
-if __name__ == "__main__":
-    test()
+    if 0 <= abs(alpha) <= beamwidth_ml / 2:
+        return (G0 - 3.01 * (2 * alpha / w) ** 2) # in dB
+    else:
+        return -0.4111 * math.log(math.degrees(w)) - 10.579 # in dB
+
+def find_geo(coord_1, coord_2):
+    dy = coord_2[1] - coord_1[1]
+    dx = coord_2[0] - coord_1[0]
+    radians = math.atan2(dy, dx)
+    return radians
+
+def find_misalignment(boresight_angle, geo):
+    if boresight_angle == 'Omnidirectional' or boresight_angle == 360:
+        alpha = 0
+    else:
+        alpha = math.degrees(abs(boresight_angle - geo))
+
+    if alpha > 180:
+        alpha = alpha - 360
+    return alpha
+
+def find_links(users, base_stations, x_bs, y_bs):
+    links = np.zeros((len(users), len(base_stations)))
+    signal = np.zeros((len(users), len(base_stations)))
+
+    for user in users:
+        user_coords = [user.x, user.y]
+        BSs = util.find_closest_BS(user_coords, x_bs, y_bs)
+        SNR = - math.inf
+        for bs in BSs[:10]:  # assuming that the highest SNR BS will be within the closest 10 BSs
+            base_station = base_stations[bs]
+            for channel in base_station.channels:
+                new_SNR = snr(user_coords, base_station, channel)
+                if new_SNR > SNR:
+                    SNR = new_SNR
+                    best_bs = bs
+
+        signal[user.id, best_bs] = SNR
+        links[user.id, best_bs] = 1
+
+    return links, signal

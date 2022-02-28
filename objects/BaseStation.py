@@ -6,12 +6,14 @@ import settings as settings
 import util as util
 import models as models
 import random
+
+
 # code from Bart Meyers
 
 
 # TODO change mmwave workings
 class BaseStation:
-    def __init__(self, id, radio, x, y, provider = '', small_cell = False):
+    def __init__(self, id, radio, x, y, provider='', small_cell=False):
         self.id = id
         self.radio = radio
         self.y = float(y)
@@ -43,9 +45,6 @@ class BaseStation:
         self.functional = new_functional
         self.create_new_channels()
 
-    def add_link(self, link: Link.BS_BS_Link):
-        self.connected_BS.append(link)
-
     def add_channel(self, height, frequency, power, angle, bandwidth):
         """
         Adds an omnidirectional channel to the basestation
@@ -56,14 +55,8 @@ class BaseStation:
         :param power: The transmit power for this channel
         :return: None
         """
-        channel = Channel(height, frequency, power, angle, bandwidth, self)
+        channel = Channel(height, frequency, power, angle, bandwidth, beamwidth=360)
         self.channels.append(channel)
-
-    def __add__(self, other):
-        new_link = Link.BS_BS_Link(self, other)
-        self.connected_BS.append(new_link)
-        other.add_link(new_link)
-        return new_link
 
     def add_ue(self, ue):
         """
@@ -95,7 +88,6 @@ class BaseStation:
         los: bool
         frequency: float  # in Hz
         bs_height: float
-
 
         params = models.ModelParameters(distance_2d, distance_3d, los, self.frequency, self.height)
 
@@ -158,22 +150,13 @@ class BaseStation:
 # TODO add method for reordering channel bandwidth
 # TODO add method for determining if a user can connect if beamforming (due to similar angles)
 class Channel:
-    def __init__(self, height, frequency, power, main_direction, bs, bandwidth, beamforming=False):
+    def __init__(self, height, frequency, power, main_direction, bandwidth, beamwidth=360):
         self.height = height
         self.frequency = frequency
         self.power = power
         self.main_direction = main_direction
         self.bandwidth = bandwidth
-
-        self.devices = dict()
-        self.desired_band = dict()
-
-        self.beamforming: bool = beamforming
-        self.used_angles = []
-
-        self.bs = bs
-
-
+        self.beamwidth = beamwidth
 
     # TODO add angle to angles list if channel is mmWave
     def add_device(self, ue, minimum_bandwidth, bs):
@@ -234,13 +217,10 @@ class Channel:
 
     def __str__(self):
         msg = "Channel[{}]:".format(self.frequency)
-        for device in self.devices:
-            msg += "\n{} Desired Bandwidth:{}, Actual Bandwidth:{}".format(device, self.desired_band[device],
-                                                                           self.devices[device])
         return msg
 
     def __repr__(self):
-        return f"Channel[{self.frequency/1e9}]: main direction = {self.main_direction}; power = {self.power};  "
+        return f"Channel[{self.frequency / 1e9}]: main direction = {self.main_direction}; power = {self.power};  "
 
     def __eq__(self, other):
         if not isinstance(other, Channel):

@@ -2,28 +2,6 @@ import models
 import settings
 # code from Bart Meyers
 
-
-class BS_BS_Link:
-    def __init__(self, device1, device2):
-        self.device1 = device1
-        self.device2 = device2
-
-        self.functional = 1
-        pass
-
-    def other(self, bs):
-        if self.device1 is bs:
-            return self.device2
-
-        if self.device2 is bs:
-            return self.device1
-
-        return None
-
-    def __str__(self):
-        return "Link between {} and {}".format(self.device1, self.device2)
-
-
 class UE_BS_Link:
     def __init__(self, ue, base_station, channel, power, dist, frequency):
         """

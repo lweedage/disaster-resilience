@@ -1,13 +1,10 @@
 import csv
 import math
 import re
-
 import numpy as np
-
 import settings as settings
 import plotly.graph_objects as go
 import scipy.stats as st
-
 import enum
 
 
@@ -143,7 +140,6 @@ def active_channels(bs):
 
 def connected_ue_bs(base_stations):
     return sum([len(bs.connected_UE) for bs in base_stations]) / len(base_stations)
-
 
 
 def to_pwr(db):
@@ -349,3 +345,19 @@ def find_provider(frequency): # frequency in MHz
 
     print(frequency)
     return 'None', 0
+
+def find_closest_BS(user_coords, x_bs, y_bs):
+    x = np.array(x_bs) - user_coords[0]
+    y = np.array(y_bs) - user_coords[1]
+    return np.argsort(x ** 2 + y ** 2)
+
+
+def save_object(obj, filename):
+    with open(filename, 'wb') as outp:
+        pickle.dump(obj, outp, pickle.HIGHEST_PROTOCOL)
+
+def average(data):
+    if len(data) > 0:
+        return (sum(data) / len(data))
+    else:
+        return None
