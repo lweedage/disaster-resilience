@@ -24,7 +24,7 @@ MINIMUM_POWER = -80  # dbm
 # percentage of population using the network
 ACTIVITY = 0.007  # 0.7%
 # Average height of buildings in an area (used for RMa 5G NR only)
-AVG_BUILDING_HEIGHT = 14  # current number based on average two-story building
+AVG_BUILDING_HEIGHT = 15  # current number based on average two-story building
 AVG_STREET_WIDTH = 10
 
 # BASE STATION PROPERTIES

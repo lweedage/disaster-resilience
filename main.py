@@ -13,7 +13,6 @@ import models
 import numpy as np
 import graph_functions as g
 
-
 # Retrieve zip code population + area data and make a region with specified zip codes
 # Columns are: aantal_inw (population), stedelijkh (urbanity), postcode (zip code), geometry, popdensity (population density), municipali(city), GSM_BS, UMTS_BS, LTE_BS, NR_BS, BSs, scenario
 zip_codes = gpd.read_file('data/zip_codes_with_scenarios.shp')
@@ -24,27 +23,30 @@ zip_codes = gpd.read_file('data/zip_codes_with_scenarios.shp')
 cities = ['Amsterdam']
 city = cities[0]
 
-
 region, zip_code_region = antenna.find_zip_code_region(zip_codes, cities)
 print('Finding BSs...')
+
 base_stations, x_bs, y_bs = antenna.load_bs(region)
-users, x_user, y_user = generate_users.generate_users(zip_code_region, percentage = 1)
+users, x_user, y_user = generate_users.generate_users(zip_code_region, percentage=1)
 print('There are', len(x_user), 'users')
 
-links, signal = models.find_links(users, base_stations, x_bs, y_bs)
+links, link_channel, snr = models.find_links(users, base_stations, x_bs, y_bs)
+capacity = models.find_capacity(users, base_stations, snr, link_channel)
 
 fig, ax = plt.subplots()
-zip_code_region.plot(column = 'popdensity', ax =ax, cmap='OrRd')
+zip_code_region.plot(column='popdensity', ax=ax, cmap='OrRd')
 
 g.draw_graph(x_bs, y_bs, x_user, y_user, links, base_stations, ax)
 bound = 1000
 plt.xlim((min(x_user) - bound, max(x_user) + bound))
 plt.ylim((min(y_user) - bound, max(y_user) + bound))
-plt.savefig(f'{city}graph.png', dpi = 1000)
+plt.savefig(f'Figures\\{city}graph.png', dpi=1000)
 plt.show()
 
-analyse_UA.histogram_snr(signal, city)
+analyse_UA.histogram_snr(snr, city)
 analyse_UA.degree_bs(links, city)
+analyse_UA.capacity(capacity, city)
+
 # analyse_UA.degree_user(links, city)
 
 

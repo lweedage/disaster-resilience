@@ -1,6 +1,5 @@
 import networkx as nx
 from settings import *
-import pydot
 
 def make_graph(xbs, ybs, xu, yu, base_stations, links):
     G = nx.Graph()

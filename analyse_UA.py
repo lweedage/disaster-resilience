@@ -27,3 +27,13 @@ def degree_user(links, city):
     plt.ylabel('Number of users')
     plt.title(f'User degree in {city}')
     plt.show()
+
+def capacity(capacity, city):
+    capacity = sum(np.transpose(capacity))
+    print(capacity)
+
+    plt.hist(capacity)
+    plt.xlabel('Channel capacity per user (bps)')
+    plt.ylabel('Number of users')
+    plt.title(f'User capacity in {city}')
+    plt.show()

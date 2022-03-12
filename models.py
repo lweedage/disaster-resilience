@@ -229,6 +229,7 @@ def snr(user_coords, base_station, channel):
 
     gain = find_gain(user_coords, bs_coords, boresight_angle, beamwidth)
     noise = find_noise(bandwidth, radio)
+
     return power + gain - noise
 
 def sinr(user_coords, base_station, channel):
@@ -243,6 +244,7 @@ def shannon_capacity(snr, bandwidth):
     :param bandwidth:
     :return:
     """
+    snr = 10**(snr/10)
     return bandwidth * math.log2(1 + snr)
 
 def beamforming():
@@ -254,7 +256,8 @@ def beamforming():
     return settings.BEAMFORMING_GAIN
 
 def thermal_noise(bandwidth):
-    return settings.BOLTZMANN * settings.TEMPERATURE * bandwidth
+    thermal_noise = settings.BOLTZMANN * settings.TEMPERATURE * bandwidth
+    return 10 * math.log10(thermal_noise) + 30 # 30 is to go from dBW to dBm
 
 def find_noise(bandwidth, radio):
     if radio == util.BaseStationRadioType.NR:
@@ -291,7 +294,8 @@ def find_misalignment(boresight_angle, geo):
 
 def find_links(users, base_stations, x_bs, y_bs):
     links = np.zeros((len(users), len(base_stations)))
-    signal = np.zeros((len(users), len(base_stations)))
+    snrs = np.zeros((len(users), len(base_stations)))
+    channel_link = np.zeros((len(users), len(base_stations)))
 
     for user in users:
         user_coords = [user.x, user.y]
@@ -304,8 +308,22 @@ def find_links(users, base_stations, x_bs, y_bs):
                 if new_SNR > SNR:
                     SNR = new_SNR
                     best_bs = bs
-
-        signal[user.id, best_bs] = SNR
+                    channel_id = channel.id
+            # base_station.channels[int(channel_id)].add_user(user)
+        snrs[user.id, best_bs] = SNR
+        channel_link[user.id, best_bs] = channel_id
         links[user.id, best_bs] = 1
 
-    return links, signal
+    return links, channel_link, snrs
+
+def find_capacity(users, base_stations, SNR ,links):
+    capacity = np.zeros((len(users), len(base_stations)))
+    for bs in base_stations:
+        bs_id = bs.id
+        for user in users:
+            user_id = user.id
+            if links[user_id, bs_id] > 0:
+                bandwidth = bs.channels[int(links[user_id, bs_id])].bandwidth
+                print(SNR[user.id, bs.id])
+                capacity[user_id, bs_id] = shannon_capacity(SNR[user.id, bs.id], bandwidth)
+    return capacity

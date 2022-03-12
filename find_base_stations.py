@@ -51,13 +51,12 @@ def load_bs(zip_code_region):
 
                 freq_dict = dict()
                 for key in bs.get("antennas").keys():
-                    height = bs.get('antennas')[str(0)].get("height")
                     antenna = bs.get("antennas").get(key)
                     frequency = antenna.get("frequency")
                     main_direction = antenna.get('angle')
                     power = antenna.get("power")  # in dBW?
+                    height = bs.get('antennas')[str(0)].get("height")
                     provider, bandwidth = util.find_provider(frequency / 1e6)
-
                     if main_direction != 'Omnidirectional':
                         if frequency in freq_dict.keys():
                             freq_dict[frequency].append(main_direction)
@@ -67,7 +66,7 @@ def load_bs(zip_code_region):
                     if power < 18.6 or main_direction == "Omnidirectional":
                         small_cell = True
 
-                    new_bs.add_channel(height, frequency, power, main_direction, bandwidth)
+                    new_bs.add_channel(key, height, frequency, power, main_direction, bandwidth)
 
                 for channel in new_bs.channels:
                     if channel.frequency in freq_dict.keys():
@@ -77,7 +76,6 @@ def load_bs(zip_code_region):
                             length = len(angle_list)
                             beamwidth = ((angle_list[(index + 1) % length] - angle_list[index]) % 360) / 2 + (
                                         (angle_list[index] - angle_list[(index - 1) % length]) % 360) / 2
-
                             if beamwidth == 0:
                                 beamwidth = 360
                         else:
