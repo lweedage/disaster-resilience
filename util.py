@@ -6,6 +6,7 @@ import settings as settings
 import plotly.graph_objects as go
 import scipy.stats as st
 import enum
+import pickle
 
 
 def distance(x1, y1, x2, y2):
@@ -116,18 +117,6 @@ def snr_averages(ue):
             snrs.append(0)
     return sum(snrs) / len(snrs) if len(snrs) > 0 else 0
 
-
-def active_base_stations(bs):  # TODO make nicer (if BS has channels available set as active)
-    ab = 0
-    for b in bs:
-        for c in b.channels:
-            if c.enabled:
-                ab += 1
-                break
-    return ab
-
-
-#    return sum([1 if bs.functional >= 0.2 else 0 for bs in bs])
 
 def active_channels(bs):
     ac = 0
@@ -341,8 +330,20 @@ def find_provider(frequency): # frequency in MHz
     for key, provider in frequency_dict.items():
         (min_freq, max_freq) = key
         if min_freq <= frequency < max_freq:
-            return provider, (max_freq - frequency)*10**6
-
+            bandwidth = min(frequency-min_freq, max_freq - frequency) * 2
+            if bandwidth >= 20:
+                bandwidth = 20
+            elif bandwidth >= 15:
+                bandwidth = 15
+            elif bandwidth >= 10:
+                bandwidth = 10
+            elif bandwidth >= 5:
+                bandwidth = 5
+            elif bandwidth >= 3:
+                bandwidth = 3
+            else:
+                bandwidth = 1.4
+            return provider, bandwidth*10**6
     print(frequency)
     return 'None', 0
 
@@ -361,3 +362,9 @@ def average(data):
         return (sum(data) / len(data))
     else:
         return None
+
+def find_geo(coord_1, coord_2):
+    dy = coord_2[1] - coord_1[1]
+    dx = coord_2[0] - coord_1[0]
+    radians = math.atan2(dy, dx)
+    return np.degrees(radians)

@@ -10,10 +10,8 @@ import random
 
 # code from Bart Meyers
 
-
-# TODO change mmwave workings
 class BaseStation:
-    def __init__(self, id, radio, x, y, provider = '', small_cell=False):
+    def __init__(self, id, radio, x, y, provider = '' ,small_cell=False):
         self.id = id
         self.radio = radio
         self.y = float(y)
@@ -22,8 +20,9 @@ class BaseStation:
         self.provider = str(provider)
 
         self.channels = list()
-
         self.interferers = list()
+        self.area_type = util.AreaType
+
 
     def __str__(self):
         y = self.y
@@ -45,7 +44,7 @@ class BaseStation:
         :param height: The height of the base station
         :param angle: The main direction in which the beam sends
         :param frequency: The frequency of the channel
-        :param power: The transmit power for this channel
+        :param power: The transmit power for this channel (Effective Radiated Power, in dBW)
         :return: None
         """
         channel = Channel(id, height, frequency, power, angle, bandwidth, beamwidth=360)
@@ -61,10 +60,14 @@ class Channel:
         self.bandwidth = bandwidth
         self.beamwidth = beamwidth
 
-        self.connected_users = list()
+        self.users = list()
 
         self.interferers = list()
         self.bs_interferers = list()
+
+    @property
+    def connected_users(self):
+        return len(self.users)
 
     def add_user(self, user):
         self.connected_users.append(user)
