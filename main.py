@@ -22,7 +22,7 @@ zip_codes = gpd.read_file('data/zip_codes_with_scenarios.shp')
 # province = 'Overijssel'  # 'Gelderland', 'Overijssel', 'Noord-Holland', 'Zuid-Holland', 'Groningen', 'Utrecht', 'Limburg', 'Noord-Brabant', 'Friesland', 'Zeeland', 'Flevoland', 'Drenthe'
 # cities = util.find_cities(province)  # has to be a list of cities
 
-cities = ['Amsterdam']
+cities = ['Enschede']
 city = cities[0]
 
 region, zip_code_region = antenna.find_zip_code_region(zip_codes, cities)
