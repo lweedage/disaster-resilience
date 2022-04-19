@@ -50,8 +50,11 @@ def pathloss(area_type, distance_2d, distance_3d, frequency, bs_height, ue_heigh
                 pl1 = pathloss_rma_los_pl1(bp, avg_building_height, frequency)
                 return pl1 + 40 * np.log10(distance_3d / bp) + atmospheric_attenuation(frequency,
                                                                                               distance_2d) + shadow_fading(6)
-            else:
-                raise ValueError("LoS model for RMa does not function for d_2D>10km")
+            else: #TODO This is not correct yet
+                bp = breakpoint_distance(frequency, bs_height)
+                pl1 = pathloss_rma_los_pl1(bp, avg_building_height, frequency)
+                return pl1 + 40 * np.log10(distance_3d / bp) + atmospheric_attenuation(frequency,
+                                                                                       distance_2d) + shadow_fading(6)
         else:  # NLoS
             if distance_2d < 10:
                 return settings.MCL
@@ -62,13 +65,24 @@ def pathloss(area_type, distance_2d, distance_3d, frequency, bs_height, ue_heigh
                           + (43.42 - 3.1 * np.log10(bs_height)) * (np.log10(distance_3d) - 3) \
                           + 20 * np.log10(frequency) - (3.2 * np.log10(11.75 * ue_height) - 4.97)
 
-                los_pl = pathloss(area_type, distance_2d, distance_3d, frequency, bs_height, ue_height = settings.UE_HEIGHT) #todo THIS IS WRONG!
+                los_pl = pathloss(util.AreaType.UMA, distance_2d, distance_3d, frequency, bs_height, ue_height = settings.UE_HEIGHT) #todo THIS IS WRONG!
                 return max(los_pl, nlos_pl) + atmospheric_attenuation(frequency,
                                                                       distance_2d) + shadow_fading(8)
-            else:
-                raise ValueError("NLoS model for RMa does not function for d_2D>5km")
+            else: #TODO This is not correct
+                nlos_pl = 161.04 - 7.1 * np.log10(avg_street_width) + 7.5 * np.log10(avg_building_height) \
+                          - (24.37 - 3.7 * (avg_building_height / bs_height) ** 2) * np.log10(
+                    bs_height) \
+                          + (43.42 - 3.1 * np.log10(bs_height)) * (np.log10(distance_3d) - 3) \
+                          + 20 * np.log10(frequency) - (3.2 * np.log10(11.75 * ue_height) - 4.97)
+
+                los_pl = pathloss(util.AreaType.UMA, distance_2d, distance_3d, frequency, bs_height,
+                                  ue_height=settings.UE_HEIGHT)  # todo THIS IS WRONG!
+                return max(los_pl, nlos_pl) + atmospheric_attenuation(frequency,
+                                                                      distance_2d) + shadow_fading(8)
     else:
-        raise ValueError("Unknown area type")
+        return math.inf
+
+        # raise ValueError("Unknown area type")
 
 
 def pathloss_rma_los_pl1(distance, avg_building_height, frequency):
@@ -76,7 +90,6 @@ def pathloss_rma_los_pl1(distance, avg_building_height, frequency):
     hp = avg_building_height ** 1.72
     return 20 * np.log10(a) + min(0.03 * hp, 10) * np.log10(distance) - min(0.044 * hp, 14.77) + \
            0.002 * np.log10(avg_building_height) * distance
-
 
 def pathloss_urban_los(d_2d, d_3d, freq, ue_height, bs_height, a, b, c):
     """
@@ -99,9 +112,9 @@ def pathloss_urban_los(d_2d, d_3d, freq, ue_height, bs_height, a, b, c):
     elif d_2d <= 5000:
         return a + 40 * np.log10(d_3d) + 20 * np.log10(freq / 1e9) \
                - c * np.log10(breakpoint_distance(freq, bs_height, ue_height) ** 2 + (bs_height - ue_height) ** 2)
-    else:
-        print("Pathloss urban los model does not function for d_2d>5km")
-        return 100
+    else: #TODO this is not correct
+        return a + 40 * np.log10(d_3d) + 20 * np.log10(freq / 1e9) \
+               - c * np.log10(breakpoint_distance(freq, bs_height, ue_height) ** 2 + (bs_height - ue_height) ** 2)
 
 def pathloss_urban_nlos(d_3d, freq, ue_height, a, b, c, d):
     """
@@ -118,7 +131,6 @@ def pathloss_urban_nlos(d_3d, freq, ue_height, a, b, c, d):
 
     return a + b * np.log10(d_3d) + c * np.log10(freq / 1e9) - d * (ue_height - 1.5)
 
-
 def breakpoint_distance(frequency, bs_height, ue_height=settings.UE_HEIGHT):
     """
     Determines the breakpoint distance for the 5G model
@@ -130,11 +142,9 @@ def breakpoint_distance(frequency, bs_height, ue_height=settings.UE_HEIGHT):
     c = 3.0 * 10 ** 8
     return 2 * math.pi * bs_height * ue_height * frequency / c
 
-
 # TODO
 def atmospheric_attenuation(frequency, distance):
     return 0.0
-
 
 def shadow_fading(sd):
     """
@@ -144,7 +154,6 @@ def shadow_fading(sd):
     :return:
     """
     return float(np.random.normal(0, sd))
-
 
 def los_probability(d_2d, area, ue_h = settings.UE_HEIGHT):
     """
@@ -176,25 +185,6 @@ def los_probability(d_2d, area, ue_h = settings.UE_HEIGHT):
     else:
         raise TypeError("Unknown area type")
 
-
-def received_power(radio, tx, params):
-    """
-    Calculates the power received
-    :param radio: radio type (LTE, 5G NR, mmWave)
-    :type radio: util.BaseStationRadioType
-    :param tx: transmitted power in dBm
-    :param params: Model parameters
-    :return: power received in mW
-    """
-    if radio == util.BaseStationRadioType.LTE:
-        return util.to_pwr(tx - max(pathloss(params), settings.MCL))
-    elif radio == util.BaseStationRadioType.NR:
-        # ModelParams contains frequency in MHz while the models use GHz, change the value here
-        # Determine LOS condition and add to parameters for the model
-        params.los = los_probability(params.distance_2d, params.area, params.ue_height)
-        return util.to_pwr(tx - pathloss(params))
-
-
 def snr(user_coords, base_station, channel):
     """
     Calculates signal to noise ratio in dB
@@ -204,52 +194,44 @@ def snr(user_coords, base_station, channel):
     bs_coords = (base_station.x, base_station.y)
     power = channel.power
 
-    power = 10 * math.log10(10**(power/10) / 3 ) #first convert to ratio, divide by 3 (sectorized antenna's) and then back to db
+    # power = 10 * math.log10(10**(power/10) / 3 )  #first convert to ratio, divide by 3 (sectorized antenna's) and then back to db
     #todo Not all antenna's have three sectors.
-
-    if channel.main_direction != 'Omnidirectional':
-        antenna_gain = find_antenna_gain(channel.main_direction, util.find_geo(bs_coords, user_coords))
-    else:
-        antenna_gain = 0
 
     d2d = util.distance_2d(base_station.x, base_station.y, user_coords[0], user_coords[1])
     d3d = util.distance_3d(h1 = channel.height, h2 = settings.UE_HEIGHT, d2d = d2d)
+
+    if channel.main_direction != 'Omnidirectional':
+        antenna_gain = find_antenna_gain(channel.main_direction, util.find_geo(bs_coords, user_coords),  channel.height, d2d)
+    else:
+        antenna_gain = 0
 
     path_loss = pathloss(base_station.area_type, d2d, d3d, channel.frequency, channel.height)
 
     bandwidth = channel.bandwidth
     radio = base_station.radio
     noise = find_noise(bandwidth, radio)
+    return power - path_loss + antenna_gain - noise #in dB
 
-    return power - path_loss + antenna_gain - noise
+def find_antenna_gain(bore, geo, height_bs, d2d):
+    A_vertical = vertical_gain(settings.UE_HEIGHT, height_bs, d2d)
+    A_horizontal = horizontal_gain(bore, geo)
+    return - min(-(A_horizontal + A_vertical), 30)
 
+def vertical_gain(height_user, height_bs, distance2d):
+    vertical_angle = np.degrees(math.tan((height_bs - height_user)/distance2d)) - 8 #in degrees
+    return - min(12 * ((vertical_angle - 90)/settings.VERTICAL_BEAMWIDTH3DB)**2, 30)
 
-
-def find_antenna_gain(bore, geo):
-    return - min(12 * ((bore - geo) / settings.BEAMWIDTH3DB)**2, 20)
-
-
-def sinr(user_coords, base_station, channel):
-    SNR = snr(user_coords, base_station, channel)
-    interference = 3  # todo: change this!
-    return SNR - interference
-
+def horizontal_gain(bore, geo):
+    horizontal_angle = bore - geo # in degrees
+    return - min(12 * (horizontal_angle /settings.HORIZONTAL_BEAMWIDTH3DB)**2, 30)
 
 def shannon_capacity(snr, bandwidth):
-    """
-    Calculated the shannon capacity
-    :param snr:
-    :param bandwidth:
-    :return:
-    """
-    snr = 10 ** (snr / 10)
+    snr = util.to_pwr(snr)
     return bandwidth * math.log2(1 + snr)
-
 
 def thermal_noise(bandwidth):
     thermal_noise = settings.BOLTZMANN * settings.TEMPERATURE * bandwidth
     return 10 * math.log10(thermal_noise) + 30  # 30 is to go from dBW to dBm
-
 
 def find_noise(bandwidth, radio):
     if radio == util.BaseStationRadioType.NR:
@@ -258,37 +240,88 @@ def find_noise(bandwidth, radio):
         noise_figure = 5
     return thermal_noise(bandwidth) + noise_figure
 
+def find_closest_angle(user_coords, bs_coords, directions, id_s):
+    geo = util.find_geo(user_coords, bs_coords)
+    if geo < 0:
+        geo += 360
+    directions = [min(abs(bore - geo), abs(bore - geo - 360)) for bore in directions]
+    return int(id_s[np.argmin(directions)])
+
+def interference(freq, user_coords, bs_interferers, user_height):
+    interf = 0
+    for base_station in bs_interferers:
+        OMNI = False
+        # find the channel with the direction closest to the BS, as sectorized antenna's will not all interfere with a user (when on the same freq)
+        bs_coords = (base_station.x, base_station.y)
+        directions = list()
+        ids= list()
+        for channel in base_station.channels:
+            if freq == channel.frequency:
+                if channel.main_direction != 'Omnidirectional':
+                    directions.append(channel.main_direction)
+                    ids.append(channel.id)
+                else:
+                    OMNI = True
+                    channel_id = int(channel.id)
+
+        if not OMNI:
+            channel_id = find_closest_angle(user_coords, bs_coords, directions, ids)
+
+        channel = base_station.channels[channel_id]
+        power = channel.power
+
+        # power = 10 * math.log10(10**(power/10) / 3 )  #first convert to ratio, divide by 3 (sectorized antenna's) and then back to db
+        #todo Not all antenna's have three sectors.
+
+        d2d = util.distance_2d(bs_coords[0], bs_coords[1], user_coords[0], user_coords[1])
+        d3d = util.distance_3d(h1 = channel.height, h2 = user_height, d2d = d2d)
+
+        if channel.main_direction != 'Omnidirectional':
+            antenna_gain = find_antenna_gain(channel.main_direction, util.find_geo(bs_coords, user_coords),  channel.height, d2d)
+        else:
+            antenna_gain = 0 #TODO this is not true yet
+
+        path_loss = pathloss(base_station.area_type, d2d, d3d, channel.frequency, channel.height)
+        # print(power + antenna_gain - path_loss)
+        interf += util.to_pwr(power + antenna_gain - path_loss)
+    if interf > 0:
+        return util.to_db(interf)
+    else:
+        return 0
+
 def find_links(users, base_stations, x_bs, y_bs):
     links = np.zeros((len(users), len(base_stations)))
     snrs = np.zeros((len(users), len(base_stations)))
+    sinrs = np.zeros((len(users), len(base_stations)))
     channel_link = np.zeros((len(users), len(base_stations)))
     capacities = np.zeros((len(users), len(base_stations)))
 
-
     for user in users:
-        user_coords = [user.x, user.y]
+        user_coords = (user.x, user.y)
         BSs = util.find_closest_BS(user_coords, x_bs, y_bs)
-        prev_capacity = - math.inf
-        for bs in BSs[:10]:  # assuming that the highest SNR BS will be within the closest 10 BSs
+        best_SNR = - math.inf
+        for bs in BSs[:10]:  #TODO assuming that the highest SNR BS will be within the closest 10 BSs
             base_station = base_stations[bs]
             for channel in base_station.channels:
                 SNR = snr(user_coords, base_station, channel)
-                capacity = shannon_capacity(SNR, channel.bandwidth / max(1, channel.connected_users))
-
-                if capacity > user.rate_requirement and capacity > prev_capacity and SNR > settings.MINIMUM_SNR:
-                    prev_capacity = capacity
+                SINR = SNR + interference(channel.frequency, user_coords, channel.bs_interferers, user_height=settings.UE_HEIGHT)
+                capacity = shannon_capacity(SINR, channel.bandwidth / max(1, channel.connected_users))
+                if capacity > user.rate_requirement and SNR > best_SNR:
                     best_bs = bs
                     channel_id = int(channel.id)
                     best_SNR = SNR
+                    best_capacity = capacity
+                    best_SINR = SINR
 
-        if prev_capacity > - math.inf:
+        if best_SNR >= settings.MINIMUM_SNR:
             snrs[user.id, best_bs] = best_SNR
             channel_link[user.id, best_bs] = channel_id
             base_stations[best_bs].channels[channel_id].users.append(user.id)
             links[user.id, best_bs] = 1
-            capacities[user.id, best_bs] = capacity
+            capacities[user.id, best_bs] = best_capacity
+            sinrs[user.id, best_bs] = best_SINR
 
-    return links, channel_link, snrs, capacities
+    return links, channel_link, snrs, sinrs, capacities
 
 def find_capacity(users, base_stations, SNR, links):
     capacity = np.zeros((len(users), len(base_stations)))
@@ -303,7 +336,7 @@ def find_capacity(users, base_stations, SNR, links):
 
 if __name__ == '__main__':
     angles = np.arange(-180, 180, 1)
-    gain = [find_antenna_gain(0, angle) for angle in angles]
+    gain = [find_antenna_gain(0, angle, 25, 25) for angle in angles]
 
     fig, ax = plt.subplots()
     plt.plot(angles, gain)

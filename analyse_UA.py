@@ -37,5 +37,6 @@ def capacity(capacity, city):
 
 def fairness(capacity):
     capacity_per_user = sum(np.transpose(capacity))
+    print(capacity_per_user)
     fairness = sum(capacity_per_user)**2 /(sum(i**2 for i in capacity_per_user) * len(capacity_per_user))
     print(f'The fairness is {fairness}')

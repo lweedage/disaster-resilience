@@ -37,7 +37,7 @@ class BaseStation:
         return f"BS[{self.id}]: {self.x=},{self.y=},{self.radio=},#Channels={len(self.channels)}"
 
 
-    def add_channel(self, id, height, frequency, power, angle, bandwidth):
+    def add_channel(self, id, BS_id, height, frequency, power, angle, bandwidth):
         """
         Adds an omnidirectional channel to the basestation
         :param bandwidth:
@@ -47,12 +47,13 @@ class BaseStation:
         :param power: The transmit power for this channel (Effective Radiated Power, in dBW)
         :return: None
         """
-        channel = Channel(id, height, frequency, power, angle, bandwidth, beamwidth=360)
+        channel = Channel(id, BS_id, height, frequency, power, angle, bandwidth, beamwidth=360)
         self.channels.append(channel)
 
 class Channel:
-    def __init__(self, id, height, frequency, power, main_direction, bandwidth, beamwidth=360):
+    def __init__(self, id, BS_id, height, frequency, power, main_direction, bandwidth, beamwidth=360):
         self.id = id
+        self.BS_id = BS_id
         self.height = height
         self.frequency = frequency
         self.power = power
@@ -63,7 +64,7 @@ class Channel:
         self.users = list()
 
         self.interferers = list()
-        self.bs_interferers = list()
+        self.bs_interferers = set()
 
     @property
     def connected_users(self):
@@ -73,8 +74,11 @@ class Channel:
         self.connected_users.append(user)
 
     def find_interferers(self, base_stations):
+        self_bs = base_stations[self.BS_id]
         for bs in base_stations:
-            for channel in bs.channels:
-                if channel.frequency == self.frequency:
-                    self.interferers.append(channel)
-                    self.bs_interferers.append(bs)
+            if bs != self_bs:
+                for channel in bs.channels:
+                    if channel.frequency == self.frequency:
+                        if util.distance_2d(bs.x, bs.y, self_bs.x, self_bs.y) < 5000:
+                            self.interferers.append(channel)
+                            self.bs_interferers.add(bs)

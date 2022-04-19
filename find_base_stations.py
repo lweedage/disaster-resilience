@@ -1,15 +1,15 @@
 import json
-
 import geopandas as gpd
 from shapely.geometry import Point
 from shapely.ops import unary_union
-
 import objects.BaseStation as BSO
 import util
 from settings import *
+import sys
 
+sys.setrecursionlimit(5000)
 
-# code from Bart Meyers
+# code adapted from Bart Meyers
 
 def find_zip_code_region(zip_codes, city=None):
     if city is None:
@@ -28,10 +28,10 @@ def find_zip_code_region(zip_codes, city=None):
 
 
 def load_bs(region, zip_code_region, city):
-    all_basestations = util.from_data(f'data/BSs/{city}_all_basestations.p')
-    xs = util.from_data(f'data/BSs/{city}_xs.p')
-    ys = util.from_data(f'data/BSs/{city}_ys.p')
-
+    # all_basestations = util.from_data(f'data/BSs/{city}_all_basestations.p')
+    # xs = util.from_data(f'data/BSs/{city}_xs.p')
+    # ys = util.from_data(f'data/BSs/{city}_ys.p')
+    all_basestations = None
     if all_basestations is None:
         all_basestations = list()
         id = 0
@@ -67,7 +67,8 @@ def load_bs(region, zip_code_region, city):
                         antenna = bs.get("antennas").get(key)
                         frequency = antenna.get("frequency")
                         main_direction = antenna.get('angle')
-                        power = antenna.get("power") + 30 # We convert ERP power in dBW to dBm
+
+                        power = antenna.get("power") + 30  # We convert ERP power in dBW to dBm
                         height = bs.get('antennas')[str(0)].get("height")
                         provider, bandwidth = util.find_provider(frequency / 1e6)
                         if main_direction != 'Omnidirectional':
@@ -75,7 +76,7 @@ def load_bs(region, zip_code_region, city):
                                 freq_dict[frequency].append(main_direction)
                             else:
                                 freq_dict[frequency] = [main_direction]
-                        new_bs.add_channel(key, height, frequency, power, main_direction, bandwidth)
+                        new_bs.add_channel(key, new_bs.id, height, frequency, power, main_direction, bandwidth)
                     powers = [channel.power for channel in new_bs.channels]
                     if max(powers) <= 17.8 + 30:  # 17.8 dBW is 60 W, that is the maximum power of a small cell.
                         small_cell = True
@@ -113,6 +114,11 @@ def load_bs(region, zip_code_region, city):
 
                     all_basestations.append(new_bs)
                     id += 1
+
+        for bs in all_basestations:
+            for channel in bs.channels:
+                channel.find_interferers(all_basestations)
+                # TODO this is not an optimal algorithm yet.
 
         util.to_data(all_basestations, f'data/BSs/{city}_all_basestations.p')
         util.to_data(xs, f'data/BSs/{city}_xs.p')

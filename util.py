@@ -330,7 +330,6 @@ def find_cities(municipality):
         if line[0] == municipality:
             return line[1].split(',')
 
-
 def find_provider(frequency): # frequency in MHz
     frequency_dict = {(758, 768): 'Vodafone', (768, 778): 'KPN', (778, 788): 'T-Mobile', (791, 801): 'T-Mobile', (801, 811): 'Vodafone', (811, 821): 'KPN', (925, 935): 'Vodafone', (935, 945): 'KPN', (945, 960): 'T-Mobile',
      (1452, 1467): 'Vodafone', (1467, 1482): 'KPN', (1482, 1492): 'T-Mobile', (1805, 1825): 'Vodafone', (1825, 1845): 'KPN', (1845, 1875): 'T-Mobile', (2110, 2124.9): 'Vodafone', (2124.9, 2139.7): 'KPN',
