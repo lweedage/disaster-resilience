@@ -7,6 +7,17 @@ import plotly.graph_objects as go
 import scipy.stats as st
 import enum
 import pickle
+import os
+
+
+def from_data(name):
+    if os.path.exists(name):
+        return pickle.load(open(name, 'rb'))
+    else:
+        return None
+
+def to_data(data, name):
+    pickle.dump(data, open(name, 'wb'), protocol=4)
 
 
 def distance(x1, y1, x2, y2):

@@ -100,8 +100,8 @@ def pathloss_urban_los(d_2d, d_3d, freq, ue_height, bs_height, a, b, c):
         return a + 40 * np.log10(d_3d) + 20 * np.log10(freq / 1e9) \
                - c * np.log10(breakpoint_distance(freq, bs_height, ue_height) ** 2 + (bs_height - ue_height) ** 2)
     else:
-        raise ValueError("Pathloss urban los model does not function for d_2d>5km")
-
+        print("Pathloss urban los model does not function for d_2d>5km")
+        return 100
 
 def pathloss_urban_nlos(d_3d, freq, ue_height, a, b, c, d):
     """
@@ -203,6 +203,10 @@ def snr(user_coords, base_station, channel):
     """
     bs_coords = (base_station.x, base_station.y)
     power = channel.power
+
+    power = 10 * math.log10(10**(power/10) / 3 ) #first convert to ratio, divide by 3 (sectorized antenna's) and then back to db
+    #todo Not all antenna's have three sectors.
+
     if channel.main_direction != 'Omnidirectional':
         antenna_gain = find_antenna_gain(channel.main_direction, util.find_geo(bs_coords, user_coords))
     else:
