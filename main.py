@@ -31,7 +31,7 @@ print('Finding BSs...')
 base_stations, x_bs, y_bs = antenna.load_bs(region, zip_code_region, city)
 
 print('Finding users...')
-percent = 10
+percent = 5
 users, x_user, y_user = generate_users.generate_users(zip_code_region, percentage=percent, city = city)
 print('There are', len(x_user), 'users')
 
