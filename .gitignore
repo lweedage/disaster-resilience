@@ -1,1 +1,7 @@
 .idea
+data/BSs
+data/users
+Figures
+venv
+__pycache__
+objects/__pycache__

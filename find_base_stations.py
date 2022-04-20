@@ -19,7 +19,10 @@ def find_zip_code_region(zip_codes, city=None):
     region = util.from_data(f'data/BSs/{city[0]}region.p')
 
     if zip_code_region_data is None:
-        zip_code_region_data = zip_codes[zip_codes['municipali'].isin(city)]
+        if isinstance(city[0], int):
+            zip_code_region_data = zip_codes[zip_codes['postcode'].isin(city)]
+        else:
+            zip_code_region_data = zip_codes[zip_codes['municipali'].isin(city)]
         region = gpd.GeoSeries(unary_union(zip_code_region_data['geometry']))
 
         util.to_data(zip_code_region_data, f'data/BSs/{city[0]}zip_code_region_data.p')
@@ -28,10 +31,10 @@ def find_zip_code_region(zip_codes, city=None):
 
 
 def load_bs(region, zip_code_region, city):
-    # all_basestations = util.from_data(f'data/BSs/{city}_all_basestations.p')
-    # xs = util.from_data(f'data/BSs/{city}_xs.p')
-    # ys = util.from_data(f'data/BSs/{city}_ys.p')
-    all_basestations = None
+    all_basestations = util.from_data(f'data/BSs/{city}_all_basestations.p')
+    xs = util.from_data(f'data/BSs/{city}_xs.p')
+    ys = util.from_data(f'data/BSs/{city}_ys.p')
+    # all_basestations = None
     if all_basestations is None:
         all_basestations = list()
         id = 0

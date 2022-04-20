@@ -11,6 +11,15 @@ def histogram_snr(SNR, city):
     plt.show()
     print(f'SNR:{np.min(signal)}-{np.max(signal)} dB, average is {util.average(signal)} dB')
 
+def histogram_sinr(SNR, city):
+    signal = SNR[np.nonzero(SNR)]
+    plt.hist(signal)
+    plt.xlabel('SINR (dB)')
+    plt.ylabel('Number of users')
+    plt.title(f'SINR distribution in {city}')
+    plt.show()
+    print(f'SINR:{np.min(signal)}-{np.max(signal)} dB, average is {util.average(signal)} dB')
+
 def degree_bs(links, city):
     degrees = sum(links)
     plt.hist(degrees)
@@ -34,9 +43,12 @@ def capacity(capacity, city):
     plt.ylabel('Channel capacity per user (Mbps)')
     plt.title(f'User capacity in {city}')
     plt.show()
+    plt.hist(capacity)
+    plt.ylabel('Channel capacity per user (Mbps)')
+    plt.title(f'User capacity in {city}')
+    plt.show()
 
 def fairness(capacity):
     capacity_per_user = sum(np.transpose(capacity))
-    print(capacity_per_user)
     fairness = sum(capacity_per_user)**2 /(sum(i**2 for i in capacity_per_user) * len(capacity_per_user))
     print(f'The fairness is {fairness}')

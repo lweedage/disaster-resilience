@@ -2,10 +2,12 @@ from pathlib import Path
 import os
 import pandas as pd
 import numpy as np
+import seaborn as sns
 # code from Bart Meyers
 
-colors = ['#1f77b4', '#ff7f0e', '#2ca02c', '#d62728', '#9467bd', '#8c564b', '#e377c2', '#7f7f7f', '#bcbd22',
-          '#17becf'] * 1000
+colors = sns.color_palette("Paired", n_colors = 100)
+# colors = ['#1f77b4', '#ff7f0e', '#2ca02c', '#d62728', '#9467bd', '#8c564b', '#e377c2', '#7f7f7f', '#bcbd22',
+#           '#17becf'] * 1000
 pd.set_option('display.max_columns', None)
 pd.set_option('display.max_rows', None)
 
@@ -45,3 +47,5 @@ VERTICAL_BEAMWIDTH3DB = 65
 HORIZONTAL_BEAMWIDTH3DB = 65
 
 MINIMUM_SNR = 5 # dB
+
+RATE_REQUIREMENT = 100e6
