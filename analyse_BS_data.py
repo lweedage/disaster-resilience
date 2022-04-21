@@ -23,7 +23,7 @@ zip_codes = gpd.read_file('data/zip_codes.shp')
 # # cities = util.find_cities(municipality)
 cities = ['Amsterdam']
 region, zip_codes = antenna.find_zip_code_region(zip_codes, cities)
-base_stations, x_bs, y_bs = antenna.load_bs(region)
+params = antenna.load_bs(params)
 
 small_cells, macro_cells = 0, 0
 for bs in base_stations:

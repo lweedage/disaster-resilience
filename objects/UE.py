@@ -1,4 +1,3 @@
-from objects.Link import UE_BS_Link
 import settings
 # code from Bart Meyers
 

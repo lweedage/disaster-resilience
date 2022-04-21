@@ -11,6 +11,7 @@ import pickle
 import models
 import numpy as np
 import graph_functions as g
+import objects.Params as p
 
 # Retrieve zip code population + area data and make a region with specified zip codes
 # Columns are: aantal_inw (population), stedelijkh (urbanity), postcode (zip code), geometry,
@@ -18,46 +19,52 @@ import graph_functions as g
 zip_codes = gpd.read_file('data/zip_codes_with_scenarios.shp')
 
 # Region that we want to investigate:
-# province = 'Overijssel'  # 'Gelderland', 'Overijssel', 'Noord-Holland', 'Zuid-Holland', 'Groningen', 'Utrecht', 'Limburg', 'Noord-Brabant', 'Friesland', 'Zeeland', 'Flevoland', 'Drenthe'
-# cities = util.find_cities(province)  # has to be a list of cities
-# cities = [7555]
-cities = ['Enschede']
-city = cities[0]
+province = 'Overijssel'  # 'Gelderland', 'Overijssel', 'Noord-Holland', 'Zuid-Holland', 'Groningen', 'Utrecht', 'Limburg', 'Noord-Brabant', 'Friesland', 'Zeeland', 'Flevoland', 'Drenthe'
+cities = [7555]
 
+mno = ['KPN'] #'T-Mobile, Vodafone, KPN
+percentage = 1
+seed = 1
 
-region, zip_code_region = antenna.find_zip_code_region(zip_codes, cities)
+params = p.Parameters(seed, zip_codes, mno, percentage, city_list = cities, province = None)
 
-print('Finding BSs...')
-base_stations, x_bs, y_bs = antenna.load_bs(region, zip_code_region, city)
+params = antenna.find_zip_code_region(params)
 
 print('Finding users...')
-percent = 5
-users, x_user, y_user = generate_users.generate_users(zip_code_region, percentage=percent, city = city)
-print('There are', len(x_user), 'users')
+params = generate_users.generate_users(params)
+print('There are', params.number_of_users, 'users')
 
-links, link_channel, snr, sinr, capacity, FDP, FSP = models.find_links(users, base_stations, x_bs, y_bs)
 
-fraction_satisified_pop = sum(FSP)/len(users)
-fraction_disconnected_pop = sum(FDP)/len(users)
+print('Finding BSs...')
+params = antenna.load_bs(params)
+
+# print(params.fading4)
+
+
+links, link_channel, snr, sinr, capacity, FDP, FSP = models.find_links(params)
+
+fraction_satisified_pop = sum(FSP)/params.number_of_users
+fraction_disconnected_pop = sum(FDP)/params.number_of_users
 
 print(f'FDP = {fraction_disconnected_pop}')
 print(f'FSP = {fraction_satisified_pop}')
 
 fig, ax = plt.subplots()
-zip_code_region.plot(column='popdensity', ax=ax, cmap='OrRd')
-g.draw_graph(x_bs, y_bs, x_user, y_user, links, base_stations, ax)
+params.zip_code_region.plot(column='popdensity', ax=ax, cmap='OrRd')
+g.draw_graph(params, links, ax)
 bound = 1000
 
-plt.xlim((min(x_user) - bound, max(x_user) + bound))
-plt.ylim((min(y_user) - bound, max(y_user) + bound))
-plt.savefig(f'Figures/{city}{percent}graph.png', dpi=1000)
+
+plt.xlim((min(params.x_user) - bound, max(params.x_user) + bound))
+plt.ylim((min(params.y_user) - bound, max(params.y_user) + bound))
+plt.savefig(f'Figures/{params.filename}graph.png', dpi=1000)
 plt.show()
 
 capacity = np.divide(capacity, 1e6)
 
-analyse_UA.histogram_snr(snr, city)
-analyse_UA.histogram_sinr(sinr, city)
-analyse_UA.capacity(capacity, city)
+analyse_UA.histogram_snr(snr, params.filename)
+analyse_UA.histogram_sinr(sinr, params.filename)
+analyse_UA.capacity(capacity, params.filename)
 analyse_UA.fairness(capacity)
 
 

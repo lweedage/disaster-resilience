@@ -1,12 +1,8 @@
 import random
-
 from shapely.geometry import Point
-
 import objects.UE as UE
-import time
-
 import util
-
+import numpy as np
 
 def generate_random(number, polygon):  # to generate users per zip code
     points = []
@@ -31,21 +27,25 @@ def get_population(zip_codes_region, percentage):
     ys = [point.y for point in users]
     return xs, ys
 
-
-def generate_users(zip_codes_region, percentage, city):
-    all_users = util.from_data(f'data/users/{city}_{percentage}_all_users.p')
-    xs = util.from_data(f'data/users/{city}_{percentage}_xs.p')
-    ys = util.from_data(f'data/users/{city}_{percentage}_ys.p')
+def generate_users(params):
+    all_users = util.from_data(f'data/users/{params.filename}{params.seed}_all_users.p')
+    xs = util.from_data(f'data/users/{params.filename}{params.seed}_xs.p')
+    ys = util.from_data(f'data/users/{params.filename}{params.seed}_ys.p')
 
     if all_users is None:
+        np.random.seed(params.seed)
         all_users = list()
-        xs, ys = get_population(zip_codes_region, percentage)
+        xs, ys = get_population(params.zip_code_region, params.percentage)
         for i in range(len(xs)):
             new_user = UE.UserEquipment(i, xs[i], ys[i], rate_requirement=5)
             all_users.append(new_user)
 
-        util.to_data(all_users, f'data/users/{city}_{percentage}_all_users.p')
-        util.to_data(xs, f'data/users/{city}_{percentage}_xs.p')
-        util.to_data(ys, f'data/users/{city}_{percentage}_ys.p')
+        util.to_data(all_users, f'data/users/{params.filename}_all_users.p')
+        util.to_data(xs, f'data/users/{params.filename}_xs.p')
+        util.to_data(ys, f'data/users/{params.filename}_ys.p')
 
-    return all_users, xs, ys
+    params.users = all_users
+    params.x_user = xs
+    params.y_user = ys
+    params.number_of_users = len(all_users)
+    return params

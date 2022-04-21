@@ -3,7 +3,7 @@ from settings import *
 from matplotlib.lines import Line2D
 
 
-def make_graph(xbs, ybs, xu, yu, base_stations, links):
+def make_graph(p, links):
     G = nx.Graph()
     colorlist = list()
     nodesize = list()
@@ -11,8 +11,10 @@ def make_graph(xbs, ybs, xu, yu, base_stations, links):
     edgecolor = list()
     freq_color = dict()
     labels = {}
-    number_of_bs = len(xbs)
-    number_of_users = len(xu)
+    number_of_bs = p.number_of_bs
+    number_of_users = p.number_of_users
+    xbs = p.xbs
+    ybs = p.ybs
     i = 0
     for node in range(number_of_bs):
         G.add_node(node, x = xbs[node], y = ybs[node])
@@ -20,7 +22,7 @@ def make_graph(xbs, ybs, xu, yu, base_stations, links):
         #     colorlist.append(colors[2])
         # else:
         #     colorlist.append(colors[1])
-        freq = base_stations[node].channels[0].frequency
+        freq = p.BaseStations[node].channels[0].frequency
         if freq not in freq_color:
             freq_color[freq] = i
             i +=1
@@ -28,7 +30,7 @@ def make_graph(xbs, ybs, xu, yu, base_stations, links):
         nodesize.append(1)
         labels[node] = f'{freq_color[freq]}'
     for node in range(number_of_users):
-        G.add_node(node + number_of_bs, x = xu[node], y = yu[node])
+        G.add_node(node + number_of_bs, x = p.x_user[node], y = p.y_user[node])
         colorlist.append('k')
         nodesize.append(0.1)
         # labels[node + number_of_bs] = f'{node}'
@@ -41,8 +43,8 @@ def make_graph(xbs, ybs, xu, yu, base_stations, links):
     return G, colorlist, nodesize, edgesize, labels, edgecolor, freq_color
 
 
-def draw_graph(xbs, ybs, xu, yu, links, base_stations, ax):
-    G, colorlist, nodesize, edgesize, labels, edgecolor, freq_color = make_graph(xbs, ybs, xu, yu, base_stations, links)
+def draw_graph(params, links, ax):
+    G, colorlist, nodesize, edgesize, labels, edgecolor, freq_color = make_graph(params, links)
     pos = dict()
     for node in G.nodes():
         pos[node] = (nx.get_node_attributes(G, 'x')[node], nx.get_node_attributes(G, 'y')[node])
