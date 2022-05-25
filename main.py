@@ -12,6 +12,9 @@ import models
 import numpy as np
 import graph_functions as g
 import objects.Params as p
+from shapely.errors import ShapelyDeprecationWarning
+import warnings
+warnings.filterwarnings("ignore", category=ShapelyDeprecationWarning)
 
 # Retrieve zip code population + area data and make a region with specified zip codes
 # Columns are: aantal_inw (population), stedelijkh (urbanity), postcode (zip code), geometry,
@@ -20,13 +23,14 @@ zip_codes = gpd.read_file('data/zip_codes_with_scenarios.shp')
 
 # Region that we want to investigate:
 province = 'Overijssel'  # 'Gelderland', 'Overijssel', 'Noord-Holland', 'Zuid-Holland', 'Groningen', 'Utrecht', 'Limburg', 'Noord-Brabant', 'Friesland', 'Zeeland', 'Flevoland', 'Drenthe'
-cities = [7555]
+cities = util.find_cities(province)
+cities, province = ['Enschede'], None
 
 mno = ['KPN'] #'T-Mobile, Vodafone, KPN
-percentage = 1
+percentage = 50 # Three user density levels - still tbd
 seed = 1
 
-params = p.Parameters(seed, zip_codes, mno, percentage, city_list = cities, province = None)
+params = p.Parameters(seed, zip_codes, mno, percentage, city_list = cities, province = province)
 
 params = antenna.find_zip_code_region(params)
 
@@ -37,11 +41,9 @@ print('There are', params.number_of_users, 'users')
 
 print('Finding BSs...')
 params = antenna.load_bs(params)
+print('There are', params.number_of_bs, 'BSs')
 
-# print(params.fading4)
-
-
-links, link_channel, snr, sinr, capacity, FDP, FSP = models.find_links(params)
+links, link_channel, snr, sinr, capacity, FDP, FSP, satisfaction_level = models.find_links(params)
 
 fraction_satisified_pop = sum(FSP)/params.number_of_users
 fraction_disconnected_pop = sum(FDP)/params.number_of_users
@@ -50,15 +52,18 @@ print(f'FDP = {fraction_disconnected_pop}')
 print(f'FSP = {fraction_satisified_pop}')
 
 fig, ax = plt.subplots()
-params.zip_code_region.plot(column='popdensity', ax=ax, cmap='OrRd')
-g.draw_graph(params, links, ax)
-bound = 1000
-
-
-plt.xlim((min(params.x_user) - bound, max(params.x_user) + bound))
-plt.ylim((min(params.y_user) - bound, max(params.y_user) + bound))
-plt.savefig(f'Figures/{params.filename}graph.png', dpi=1000)
+plt.hist(satisfaction_level)
+plt.xlabel('satisfaction level')
 plt.show()
+
+# fig, ax = plt.subplots()
+# params.zip_code_region.plot(column='popdensity', ax=ax, cmap='OrRd')
+# g.draw_graph(params, links, ax)
+# bound = 1000
+# plt.xlim((min(params.x_user) - bound, max(params.x_user) + bound))
+# plt.ylim((min(params.y_user) - bound, max(params.y_user) + bound))
+# plt.savefig(f'Figures/{params.filename}graph.png', dpi=1000)
+# plt.show()
 
 capacity = np.divide(capacity, 1e6)
 

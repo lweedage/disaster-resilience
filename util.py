@@ -94,7 +94,6 @@ def find_provider(frequency): # frequency in MHz
             else:
                 bandwidth = 1.4
             return provider, bandwidth*10**6
-    print(frequency)
     return 'None', 0
 
 def find_closest_BS(user_coords, x_bs, y_bs):

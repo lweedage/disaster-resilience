@@ -38,7 +38,6 @@ def degree_user(links, city):
     plt.show()
 
 def capacity(capacity, city):
-    capacity = sum(np.transpose(capacity))
     plt.boxplot(capacity)
     plt.ylabel('Channel capacity per user (Mbps)')
     plt.title(f'User capacity in {city}')
@@ -49,6 +48,6 @@ def capacity(capacity, city):
     plt.show()
 
 def fairness(capacity):
-    capacity_per_user = sum(np.transpose(capacity))
-    fairness = sum(capacity_per_user)**2 /(sum(i**2 for i in capacity_per_user) * len(capacity_per_user))
+    # capacity_per_user = sum(np.transpose(capacity))
+    fairness = sum(capacity)**2 /(sum(i**2 for i in capacity) * len(capacity))
     print(f'The fairness is {fairness}')

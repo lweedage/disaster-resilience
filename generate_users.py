@@ -1,6 +1,7 @@
 import random
 from shapely.geometry import Point
 import objects.UE as UE
+import settings
 import util
 import numpy as np
 
@@ -33,16 +34,22 @@ def generate_users(params):
     ys = util.from_data(f'data/users/{params.filename}{params.seed}_ys.p')
 
     if all_users is None:
+        print('Users are not stored in memory')
         np.random.seed(params.seed)
         all_users = list()
-        xs, ys = get_population(params.zip_code_region, params.percentage)
+        xs, ys = get_population(params.zip_code_region, params.percentage_plus_MNO)
         for i in range(len(xs)):
-            new_user = UE.UserEquipment(i, xs[i], ys[i], rate_requirement=5)
+            if i < int(len(xs)*settings.FRACTION[1]):
+                new_user = UE.UserEquipment(i, xs[i], ys[i], rate_requirement = settings.RATE_REQUIREMENT[1])
+            elif i < int(len(xs) * (settings.FRACTION[1] + settings.FRACTION[2])):
+                new_user = UE.UserEquipment(i, xs[i], ys[i], rate_requirement = settings.RATE_REQUIREMENT[2])
+            else:
+                new_user = UE.UserEquipment(i, xs[i], ys[i], rate_requirement = settings.RATE_REQUIREMENT[3])
             all_users.append(new_user)
 
-        util.to_data(all_users, f'data/users/{params.filename}_all_users.p')
-        util.to_data(xs, f'data/users/{params.filename}_xs.p')
-        util.to_data(ys, f'data/users/{params.filename}_ys.p')
+        util.to_data(all_users, f'data/users/{params.filename}{params.seed}_all_users.p')
+        util.to_data(xs, f'data/users/{params.filename}{params.seed}_xs.p')
+        util.to_data(ys, f'data/users/{params.filename}{params.seed}_ys.p')
 
     params.users = all_users
     params.x_user = xs

@@ -83,7 +83,7 @@ class Channel:
                         interferers.append(bs.id)
                         interference_levels.append(interference_level)
         if settings.CUTOFF_VALUE_INTERFERENCE == 0:
-            self.bs_interferers = interferers
+            self.bs_interferers = [p.BaseStations[i] for i in interferers]
         else:
             indices = np.argsort(interference_levels)[:-settings.CUTOFF_VALUE_INTERFERENCE]
             self.bs_interferers = [p.BaseStations[interferers[i]] for i in indices]

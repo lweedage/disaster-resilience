@@ -26,8 +26,15 @@ class Parameters:
 
         if len(provider_list) == 1:
             provider = provider_list[0]
+            if provider == 'KPN':
+                percentage_MNO = 0.35
+            elif provider == 'T-Mobile':
+                percentage_MNO = 0.4
+            else:
+                percentage_MNO = 0.25
         else:
             provider = 'all_MNOs'
+            percentage_MNO = 1
 
         self.filename = f'{city_name}{provider}{percentage}'
 
@@ -45,6 +52,8 @@ class Parameters:
         self.y_user = list()
         self.users = list()
 
+        self.percentage_plus_MNO = percentage_MNO * percentage
+
     def initialize(self):
         np.random.seed(self.seed)
         self.los_probabilities = np.random.uniform(0, 1, (self.number_of_users, self.number_of_bs))
@@ -52,4 +61,3 @@ class Parameters:
         self.fading6 = np.random.normal(0, 6, (self.number_of_users, self.number_of_bs))
         self.fading78 = np.random.normal(0, 7.8, (self.number_of_users, self.number_of_bs))
         self.fading8 = np.random.normal(0, 8, (self.number_of_users, self.number_of_bs))
-        print(self.fading4)

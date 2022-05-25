@@ -4,10 +4,10 @@ import settings
 class UserEquipment:
     def __init__(self, id: int, x: float, y: float, rate_requirement: float):
         self.id = id
-        self.rate_requirement = rate_requirement
         self.x = x
         self.y = y
         self.height = settings.UE_HEIGHT
+        self.rate_requirement = rate_requirement
 
 
     def __str__(self):
