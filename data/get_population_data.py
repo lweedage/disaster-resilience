@@ -6,7 +6,8 @@ import csv
 
 pd.set_option('display.max_rows', None)
 pd.set_option('display.max_columns', None)
-
+# TODO add population data based on age groups?
+# TODO or maybe vierkantstatitistieken (per 100 m?) - CBS Vierkantstatistieken 100m WFS
 # Get zip code data from PDOK
 wfs = WebFeatureService('https://geodata.nationaalgeoregister.nl/cbspostcode4/wfs?service=WfS', version='1.1.0')
 

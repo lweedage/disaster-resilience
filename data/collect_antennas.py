@@ -3,6 +3,7 @@ import requests
 
 url = "https://gisextern.dictu.nl/arcgis/rest/services/Antenneregister/Antennes_extern/MapServer/20/query?f=json&returnGeometry=true&spatialRel=esriSpatialRelIntersects&geometry={%22xmin%22:0.0,%22ymin%22:289000,%22xmax%22:300000.0,%22ymax%22:629000,%22spatialReference%22:{%22wkid%22:28992}}&geometryType=esriGeometryEnvelope&inSR=28992&outFields=*&outSR=28992"
 
+#TODO would it be possible to remove indoor BSs? Based on if `indoor' is in name?
 
 def find_frequency(freq):
     if freq != '- Hz' and freq != 'Niet aanwezig':

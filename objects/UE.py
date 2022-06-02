@@ -2,12 +2,13 @@ import settings
 # code from Bart Meyers
 
 class UserEquipment:
-    def __init__(self, id: int, x: float, y: float, rate_requirement: float):
+    def __init__(self, id: int, x: float, y: float, rate_requirement: float, type: int):
         self.id = id
         self.x = x
         self.y = y
         self.height = settings.UE_HEIGHT
         self.rate_requirement = rate_requirement
+        self.type = type
 
 
     def __str__(self):

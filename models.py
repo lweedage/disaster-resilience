@@ -4,169 +4,14 @@ import numpy as np
 import settings
 import util
 import progressbar
-
-
+from shapely.geometry import Point
+from model_3GPP import *
 # code from Bart Meyers
-def pathloss(params, u_id, bs_id, area_type, distance_2d, distance_3d, frequency, bs_height,
-             ue_height=settings.UE_HEIGHT):
-    avg_building_height = settings.AVG_BUILDING_HEIGHT
-    avg_street_width = settings.AVG_STREET_WIDTH
-
-    p = params.los_probabilities[u_id, bs_id]
-    los = (p <= los_probability(distance_2d, area_type))
-
-    if area_type == util.AreaType.UMA:
-        pl_los = pathloss_urban_los(distance_2d, distance_3d, frequency, ue_height,
-                                    bs_height, 28, 22, 9)
-        if los:
-            return pl_los + atmospheric_attenuation(frequency, distance_2d) + params.fading4[u_id, bs_id]
-        else:
-            pl_nlos = pathloss_urban_nlos(distance_3d, frequency, ue_height,
-                                          13.54, 39.08, 20, 0.6)
-            return max(pl_los, pl_nlos) + atmospheric_attenuation(frequency, distance_2d) + params.fading6[u_id, bs_id]
-    elif area_type == util.AreaType.UMI:
-        pl_los = pathloss_urban_los(distance_2d, distance_3d, frequency, ue_height,
-                                    bs_height, 32.4, 21, 9.5)
-        if los:
-            return pl_los + atmospheric_attenuation(frequency, distance_2d) + params.fading4[u_id, bs_id]
-        else:
-            pl_nlos = pathloss_urban_nlos(distance_3d, frequency, ue_height,
-                                          22.4, 35.3, 21.3, 0.3)
-            return max(pl_los, pl_nlos) + atmospheric_attenuation(frequency, distance_2d) + params.fading78[u_id, bs_id]
-    elif area_type == util.AreaType.RMA:
-        if los:
-            bp = breakpoint_distance(frequency, bs_height)
-            if distance_2d < 10:
-                return settings.MCL
-            elif distance_2d <= bp:
-                return pathloss_rma_los_pl1(distance_3d, avg_building_height, frequency) + \
-                       atmospheric_attenuation(frequency, distance_2d) + params.fading4[u_id, bs_id]
-            elif distance_2d <= 10000:
-                pl1 = pathloss_rma_los_pl1(bp, avg_building_height, frequency)
-                return pl1 + 40 * np.log10(distance_3d / bp) + atmospheric_attenuation(frequency,
-                                                                                       distance_2d) + params.fading6[
-                           u_id, bs_id]
-            else:  # TODO This is not correct yet
-                pl1 = pathloss_rma_los_pl1(bp, avg_building_height, frequency)
-                return pl1 + 40 * np.log10(distance_3d / bp) + atmospheric_attenuation(frequency,
-                                                                                       distance_2d) + params.fading6[
-                           u_id, bs_id]
-        else:  # NLoS
-            if distance_2d < 10:
-                return settings.MCL
-            elif distance_2d <= 5000:
-                nlos_pl = 161.04 - 7.1 * np.log10(avg_street_width) + 7.5 * np.log10(avg_building_height) \
-                          - (24.37 - 3.7 * (avg_building_height / bs_height) ** 2) * np.log10(
-                    bs_height) \
-                          + (43.42 - 3.1 * np.log10(bs_height)) * (np.log10(distance_3d) - 3) \
-                          + 20 * np.log10(frequency / 1e9) - (3.2 * np.log10(11.75 * ue_height) - 4.97)
-
-                los_pl = pathloss(params, u_id, bs_id, util.AreaType.UMA, distance_2d, distance_3d, frequency,
-                                  bs_height,
-                                  ue_height=settings.UE_HEIGHT)  # todo THIS IS WRONG!
-                return max(los_pl, nlos_pl) + atmospheric_attenuation(frequency,
-                                                                      distance_2d) + params.fading8[u_id, bs_id]
-            else:  # TODO This is not correct
-                nlos_pl = 161.04 - 7.1 * np.log10(avg_street_width) + 7.5 * np.log10(avg_building_height) \
-                          - (24.37 - 3.7 * (avg_building_height / bs_height) ** 2) * np.log10(
-                    bs_height) \
-                          + (43.42 - 3.1 * np.log10(bs_height)) * (np.log10(distance_3d) - 3) \
-                          + 20 * np.log10(frequency) - (3.2 * np.log10(11.75 * ue_height) - 4.97)
-
-                los_pl = pathloss(params, u_id, bs_id, util.AreaType.UMA, distance_2d, distance_3d, frequency,
-                                  bs_height,
-                                  ue_height=settings.UE_HEIGHT)  # todo THIS IS WRONG!
-                return max(los_pl, nlos_pl) + atmospheric_attenuation(frequency,
-                                                                      distance_2d) + params.fading8[u_id, bs_id]
-    else:
-        return math.inf
-
-        # raise ValueError("Unknown area type")
-
-
-def pathloss_rma_los_pl1(distance, avg_building_height, frequency):
-    freq = frequency / 1e9
-    a = 40 * math.pi * distance * freq / 3
-    hp = avg_building_height ** 1.72
-    return 20 * np.log10(a) + min(0.03 * hp, 10) * np.log10(distance) - min(0.044 * hp, 14.77) + \
-           0.002 * np.log10(avg_building_height) * distance
-
-
-def pathloss_urban_los(d_2d, d_3d, freq, ue_height, bs_height, a, b, c):
-    """
-    Determine pathloss under urban LoS conditions.
-    For the parameters see paper: they differ for UMi/UMa scenarios
-    :param d_2d: 2d distance
-    :param d_3d: 3d distance
-    :param freq: frequency (in Hz)
-    :param ue_height: UE height
-    :param bs_height: BS height
-    :param a: parameter alpha
-    :param b: parameter beta
-    :param c: parameter gamma
-    :return: path loss in dB
-    """
-    breakpoint = breakpoint_distance(freq, bs_height, ue_height, type='urban')
-
-    if d_2d < 10:
-        return settings.MCL
-    elif d_2d <= breakpoint:
-        return a + b * np.log10(d_3d) + 20 * np.log10(freq / 1e9)
-    elif d_2d <= 5000:
-        return a + 40 * np.log10(d_3d) + 20 * np.log10(freq / 1e9) \
-               - c * np.log10(breakpoint ** 2 + (bs_height - ue_height) ** 2)
-    else:  # TODO this is not correct
-        return a + 40 * np.log10(d_3d) + 20 * np.log10(freq / 1e9) \
-               - c * np.log10(breakpoint ** 2 + (bs_height - ue_height) ** 2)
-
-
-def pathloss_urban_nlos(d_3d, freq, ue_height, a, b, c, d):
-    return a + b * np.log10(d_3d) + c * np.log10(freq / 1e9) - d * (ue_height - 1.5)
-
-
-def breakpoint_distance(frequency, bs_height, ue_height=settings.UE_HEIGHT, type=None):
-    c = 3.0 * 10 ** 8
-    if type == 'urban':
-        effective_height = 1
-        return 4 * (bs_height - effective_height) * (ue_height - effective_height) * frequency / c
-    else:
-        return 2 * math.pi * bs_height * ue_height * frequency / c
-
-
-# TODO
-def atmospheric_attenuation(frequency, distance):
-    return 0.0
-
-
-def los_probability(d_2d, area, ue_h=settings.UE_HEIGHT):
-    if area == util.AreaType.RMA:
-        if d_2d <= 10:
-            return 1
-        else:
-            return np.exp(-((d_2d - 10) / 1000))
-    elif area == util.AreaType.UMI:
-        if d_2d <= 18:
-            return 1
-        else:
-            return (18 / d_2d + np.exp(-d_2d / 36) * (1 - 18 / d_2d))
-    elif area == util.AreaType.UMA:
-        if d_2d <= 18:
-            return 1
-        else:
-            c = 0 if ue_h <= 13 else ((ue_h - 13) / 10) ** 1.5
-            return (18 / d_2d + np.exp(-d_2d / 63) * (1 - 18 / d_2d)) * (
-                    1 + c * (5 / 4) * (d_2d / 100) ** 3 * np.exp(-d_2d / 150))
-    else:
-        raise TypeError("Unknown area type")
-
 
 def snr(user, base_station, channel, params):
     user_coords = (user.x, user.y)
     bs_coords = (base_station.x, base_station.y)
     power = channel.power
-
-    # power = 10 * math.log10(10**(power/10) / 3 )  #first convert to ratio, divide by 3 (sectorized antenna's) and then back to db
-    # todo Not all antenna's have three sectors.
 
     d2d = util.distance_2d(base_station.x, base_station.y, user_coords[0], user_coords[1])
     d3d = util.distance_3d(h1=channel.height, h2=settings.UE_HEIGHT, d2d=d2d)
@@ -176,8 +21,28 @@ def snr(user, base_station, channel, params):
                                          d2d)
     else:
         antenna_gain = 0
-
     path_loss = pathloss(params, user.id, base_station.id, base_station.area_type, d2d, d3d, channel.frequency,
+                         channel.height)
+
+    bandwidth = channel.bandwidth
+    radio = base_station.radio
+    noise = find_noise(bandwidth, radio)
+    return power - path_loss + antenna_gain - noise  # in dB
+
+def snr_interf(bs, base_station, channel, params):
+    user_coords = (bs.x, bs.y)
+    bs_coords = (base_station.x, base_station.y)
+    power = channel.power
+
+    d2d = util.distance_2d(base_station.x, base_station.y, user_coords[0], user_coords[1])
+    d3d = util.distance_3d(h1=channel.height, h2=settings.UE_HEIGHT, d2d=d2d)
+
+    if channel.main_direction != 'Omnidirectional':
+        antenna_gain = find_antenna_gain(channel.main_direction, util.find_geo(bs_coords, user_coords), channel.height,
+                                         d2d)
+    else:
+        antenna_gain = 0
+    path_loss = pathloss_interf(params, bs.id, base_station.id, base_station.area_type, d2d, d3d, channel.frequency,
                          channel.height)
 
     bandwidth = channel.bandwidth
@@ -199,7 +64,7 @@ def sinr(user, base_station, channel, params):
         antenna_gain = find_antenna_gain(channel.main_direction, util.find_geo(bs_coords, user_coords), channel.height,
                                          d2d)
     else:
-        antenna_gain = 0
+        antenna_gain = 0 # TODO what to do with omnidirectional antennas?
 
     path_loss = pathloss(params, user.id, base_station.id, base_station.area_type, d2d, d3d, channel.frequency,
                          channel.height)
@@ -214,12 +79,13 @@ def sinr(user, base_station, channel, params):
 def highest_snr(bs, base_station, channels, params):
     snrs = list()
     for channel in channels:
-        snrs.append(snr(bs, base_station, channel, params))
+        snrs.append(snr_interf(bs, base_station, channel, params))
     return max(snrs)
 
 
 def find_antenna_gain(bore, geo, height_bs, d2d):
     A_vertical = vertical_gain(settings.UE_HEIGHT, height_bs, d2d)
+    A_vertical = 0 # TODO change if we want something else?
     A_horizontal = horizontal_gain(bore, geo)
     return - min(-(A_horizontal + A_vertical), 30)
 
@@ -270,7 +136,7 @@ def interference(params, user_id, freq, user_coords, bs_interferers, user_height
         directions = list()
         ids = list()
         for channel in base_station.channels:
-            if freq == channel.frequency:
+            if channel.frequency == freq:
                 if channel.main_direction != 'Omnidirectional':
                     directions.append(channel.main_direction)
                     ids.append(channel.id)
@@ -293,7 +159,7 @@ def interference(params, user_id, freq, user_coords, bs_interferers, user_height
             antenna_gain = find_antenna_gain(interfering_channel.main_direction, util.find_geo(bs_coords, user_coords),
                                              interfering_channel.height, d2d)
         else:
-            antenna_gain = 0  # TODO this is not true yet
+            antenna_gain = -30  # TODO this is not true yet
 
         path_loss = pathloss(params, user_id, base_station.id, base_station.area_type, d2d, d3d, interfering_channel.frequency,
                              interfering_channel.height)
@@ -305,86 +171,127 @@ def interference(params, user_id, freq, user_coords, bs_interferers, user_height
 
 
 def find_links(p):
-    links = np.zeros((p.number_of_users, p.number_of_bs))
-    snrs = np.zeros((p.number_of_users, p.number_of_bs))
-    sinrs = np.zeros((p.number_of_users, p.number_of_bs))
-    channel_link = np.zeros((p.number_of_users, p.number_of_bs))
-    capacities = np.zeros(p.number_of_users)
-    FDP = np.zeros(p.number_of_users)
-    FSP = np.zeros(p.number_of_users)
-    satisfaction_level = np.zeros(p.number_of_users)
+    links = util.from_data(f'data/Realisations/{p.filename}{p.seed}_links.p')
+    snrs = util.from_data(f'data/Realisations/{p.filename}{p.seed}_snrs.p')
+    sinrs = util.from_data(f'data/Realisations/{p.filename}{p.seed}_sinrs.p')
+    capacities = util.from_data(f'data/Realisations/{p.filename}{p.seed}_capacities.p')
+    FDP = util.from_data(f'data/Realisations/{p.filename}{p.seed}_FDP.p')
+    FSP = util.from_data(f'data/Realisations/{p.filename}{p.seed}_FSP.p')
+    satisfaction_level = util.from_data(f'data/Realisations/{p.filename}{p.seed}_satisfaction_level.p')
+    channel_link = util.from_data(f'data/Realisations/{p.filename}{p.seed}_channel_link.p')
 
-    bar = progressbar.ProgressBar(maxval=p.number_of_users, widgets=[
-        progressbar.Bar('=', f'Finding links {p.filename} [', ']'), ' ',
-        progressbar.Percentage(), ' ', progressbar.ETA()])
-    bar.start()
-    for user in p.users:
-        bar.update(int(user.id))
-        user_coords = (user.x, user.y)
-        BSs = util.find_closest_BS(user_coords, p.xbs, p.ybs)
-        best_SINR = - math.inf
-        for bs in BSs[:15]:  # TODO assuming that the highest SNR BS will be within the closest 15 BSs
-            base_station = p.BaseStations[bs]
-            for channel in base_station.channels:
-                SINR = sinr(user, base_station, channel, p)
-                if SINR > best_SINR:
-                    best_bs = bs
-                    channel_id = int(channel.id)
-                    best_SINR = SINR
-                    SNR = snr(user, base_station, channel, p)
+    if links is None:
+        links = np.zeros((p.number_of_users, p.number_of_bs))
+        snrs = np.zeros((p.number_of_users, p.number_of_bs))
+        sinrs = np.zeros((p.number_of_users, p.number_of_bs))
+        channel_link = np.zeros((p.number_of_users, p.number_of_bs))
+        capacities = np.zeros(p.number_of_users)
+        FDP = np.zeros(p.number_of_users)
+        FSP = np.zeros(p.number_of_users)
+        satisfaction_level = np.zeros(p.number_of_users)
 
-        if best_SINR >= settings.MINIMUM_SNR:
-            sinrs[user.id, best_bs] = best_SINR
-            channel_link[user.id, best_bs] = channel_id
-            for c in p.BaseStations[best_bs].channels:
-                if int(c.id) == channel_id:
-                    c.add_user(user.id)
-            links[user.id, best_bs] = 1
-            snrs[user.id, best_bs] = SNR
-        else:
-            FDP[user.id] = 1
+        bar = progressbar.ProgressBar(maxval=p.number_of_users, widgets=[
+            progressbar.Bar('=', f'Finding links {p.filename} [', ']'), ' ',
+            progressbar.Percentage(), ' ', progressbar.ETA()])
+        bar.start()
+        for user in p.users:
+            bar.update(int(user.id))
+            user_coords = (user.x, user.y)
+            BSs = util.find_closest_BS(user_coords, p.xbs, p.ybs)
+            best_measure = - math.inf
+            for bs in BSs[:25]:  # assuming that the highest SNR BS will be within the closest 25 BSs
+                base_station = p.BaseStations[bs]
+                for channel in base_station.channels:
+                    SINR = sinr(user, base_station, channel, p)
+                    # SINR = snr(user, base_station, channel, p) #TODO I now base it on SNR ipv SINR
+                    if SINR / max(1, len(channel.users)) > best_measure:
+                        best_bs = bs
+                        channel_id = int(channel.id)
+                        best_SINR = SINR
+                        best_measure = SINR / max(1, len(channel.users))
+                        SNR = snr(user, base_station, channel, p)
 
-    # for now, we share the bandwidth equally over the users. water-filling algorithm would also be possible? Or proportionally fair allocation
-    for bs in p.BaseStations:
-        for c in bs.channels:
-            for user in c.users:
-                print(user)
-                capacity = shannon_capacity(sinrs[user, bs.id], c.bandwidth/c.connected_users)
-                print(capacity)
-                capacities[user] += capacity
+            if best_SINR >= settings.MINIMUM_SNR:
+                sinrs[user.id, best_bs] = best_SINR
+                channel_link[user.id, best_bs] = channel_id
+                for c in p.BaseStations[best_bs].channels:
+                    if int(c.id) == channel_id:
+                        c.add_user(user.id)
+                links[user.id, best_bs] = 1
+                snrs[user.id, best_bs] = SNR
+            else:
+                FDP[user.id] = 1
+        bar.finish()
 
-    for user in p.users:
-        if capacities[user.id] > user.rate_requirement:
-            FSP[user.id] = 1
-            satisfaction_level[user.id] = 1
-        else:
-            satisfaction_level[user.id] = capacities[user.id]/user.rate_requirement
+        # for now, we share the bandwidth equally over the users. water-filling algorithm would also be possible? Or proportionally fair allocation
+        print('Now, we find the capacities')
+        for bs in p.BaseStations:
+            for c in bs.channels:
+                if len(c.users) > 0:
+                    # first, find the spectral efficiency of all users in this channel
+                    SE = [math.log2(1 + util.to_pwr(sinrs[user, bs.id])) for user in c.users]
+                    # then, we find the required bandwidth per user
+                    BW = [p.users[user].rate_requirement/SE[i] for i, user in zip(range(len(SE)), c.users)]
+                    # if there is more BW required than the channel has, we decrease the BW with that percentage for everyone
+                    BW = np.multiply(c.bandwidth/sum(BW), BW)
+                    for i, user in zip(range(len(c.users)), c.users):
+                        capacity = shannon_capacity(sinrs[user, bs.id], BW[i])
+                        capacities[user] += capacity
+                        if capacities[user] > p.users[user].rate_requirement:
+                            FSP[user] = 1
+                            satisfaction_level[user] = 1
+                        else:
+                            satisfaction_level[user] = capacities[user] / p.users[user].rate_requirement
 
-    bar.finish()
 
-    util.to_data(links, f'data/Realisations/{p.filename}_links.p')
-    util.to_data(snrs, f'data/Realisations/{p.filename}_snrs.p')
-    util.to_data(sinrs, f'data/Realisations/{p.filename}_sinrs.p')
-    util.to_data(capacities, f'data/Realisations/{p.filename}_capacities.p')
-    util.to_data(FDP, f'data/Realisations/{p.filename}_FDP.p')
-    util.to_data(FSP, f'data/Realisations/{p.filename}_FSP.p')
-    util.to_data(satisfaction_level, f'data/Realisations/{p.filename}_satisfaction_level.p')
-
+        util.to_data(links, f'data/Realisations/{p.filename}{p.seed}_links.p')
+        util.to_data(snrs, f'data/Realisations/{p.filename}{p.seed}_snrs.p')
+        util.to_data(sinrs, f'data/Realisations/{p.filename}{p.seed}_sinrs.p')
+        util.to_data(capacities, f'data/Realisations/{p.filename}{p.seed}_capacities.p')
+        util.to_data(FDP, f'data/Realisations/{p.filename}{p.seed}_FDP.p')
+        util.to_data(FSP, f'data/Realisations/{p.filename}{p.seed}_FSP.p')
+        util.to_data(satisfaction_level, f'data/Realisations/{p.filename}{p.seed}_satisfaction_level.p')
 
     return links, channel_link, snrs, sinrs, capacities, FDP, FSP, satisfaction_level
 
+def proportional_bandwidth(bandwidth, SE, index):
+    return bandwidth / (SE[index] * sum(1/x for x in SE))
 
-def find_capacity(p, SNR, links):
-    capacity = np.zeros((p.number_of_users, p.number_of_bs))
-    for bs in p.base_stations:
-        bs_id = bs.id
-        for user in p.users:
-            user_id = user.id
-            if links[user_id, bs_id] > 0:
-                bandwidth = bs.channels[int(links[user_id, bs_id])].bandwidth
-                capacity[user_id, bs_id] = shannon_capacity(SNR[user.id, bs.id], bandwidth)
-    return capacity
+# def find_capacity(p, SNR, links):
+#     capacity = np.zeros((p.number_of_users, p.number_of_bs))
+#     for bs in p.base_stations:
+#         bs_id = bs.id
+#         for user in p.users:
+#             user_id = user.id
+#             if links[user_id, bs_id] > 0:
+#                 bandwidth = bs.channels[int(links[user_id, bs_id])].bandwidth
+#                 capacity[user_id, bs_id] = shannon_capacity(SNR[user.id, bs.id], bandwidth)
+#     return capacity
 
+def specify_measures(p, fdp, fsp, satisfaction_level):
+    p.zip_code_region['FDP'] = [[]] * len(p.zip_code_region)
+    p.zip_code_region['FSP'] = [[]] * len(p.zip_code_region)
+    p.zip_code_region['satisfaction'] = [[]] * len(p.zip_code_region)
+
+    bar = progressbar.ProgressBar(maxval=p.number_of_users, widgets=[
+        progressbar.Bar('=', f'Finding FDP/FSP/sat {p.filename} [', ']'), ' ',
+        progressbar.Percentage(), ' ', progressbar.ETA()])
+    bar.start()
+
+    for i, x, y in zip(range(p.number_of_users), p.x_user, p.y_user):
+        bar.update(i)
+        point = Point(x, y)
+        condition = p.zip_code_region['geometry'].contains(point)
+
+        p.zip_code_region.loc[condition, 'FDP'] = p.zip_code_region.loc[condition, 'FDP'].apply(lambda x: x + [fdp[i]])
+        p.zip_code_region.loc[condition, 'FSP'] = p.zip_code_region.loc[condition, 'FSP'].apply(lambda x: x + [fsp[i]])
+        p.zip_code_region.loc[condition, 'satisfaction'] = p.zip_code_region.loc[condition, 'satisfaction'].apply(lambda x: x + [satisfaction_level[i]])
+
+    bar.finish()
+    p.zip_code_region['averageFDP'] = p.zip_code_region['FDP'].apply(lambda x: sum(x)/len(x))
+    p.zip_code_region['averageFSP'] = p.zip_code_region['FSP'].apply(lambda x: sum(x)/len(x))
+    p.zip_code_region['average_satisfaction'] = p.zip_code_region['satisfaction'].apply(lambda x: sum(x)/len(x))
+    return p
 
 if __name__ == '__main__':
     angles = np.arange(-180, 180, 1)
@@ -435,3 +342,5 @@ if __name__ == '__main__':
     # plt.title('Path loss in non line-of-sight')
     plt.legend()
     plt.show()
+
+

@@ -80,19 +80,20 @@ def find_provider(frequency): # frequency in MHz
     for key, provider in frequency_dict.items(): #TODO explain this method in paper
         (min_freq, max_freq) = key
         if min_freq <= frequency < max_freq:
-            bandwidth = min(frequency-min_freq, max_freq - frequency) * 2
-            if bandwidth >= 20:
-                bandwidth = 20
-            elif bandwidth >= 15:
-                bandwidth = 15
-            elif bandwidth >= 10:
-                bandwidth = 10
-            elif bandwidth >= 5:
-                bandwidth = 5
-            elif bandwidth >= 3:
-                bandwidth = 3
-            else:
-                bandwidth = 1.4
+            bandwidth = max_freq - min_freq
+            # bandwidth = min(frequency-min_freq, max_freq - frequency) * 2
+            # if bandwidth >= 20:
+            #     bandwidth = 20
+            # elif bandwidth >= 15:
+            #     bandwidth = 15
+            # elif bandwidth >= 10:
+            #     bandwidth = 10
+            # elif bandwidth >= 5:
+            #     bandwidth = 5
+            # elif bandwidth >= 3:
+            #     bandwidth = 3
+            # else:
+            #     bandwidth = 1.4
             return provider, bandwidth*10**6
     return 'None', 0
 

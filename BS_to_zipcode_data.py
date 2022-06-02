@@ -37,7 +37,6 @@ for i, row in zip_codes.iterrows():
     zip_codes.at[i, 'BSs'] = UMTS + LTE + NR
 
 zip_codes['BS_density'] = zip_codes['BSs'] / zip_codes['geometry'].area
-print(zip_codes['BS_density'])
 
 for i, row in zip_codes.iterrows():
     # print(i)
@@ -45,7 +44,5 @@ for i, row in zip_codes.iterrows():
         zip_codes.at[i, 'scenario'] = 'UMa'
     elif zip_codes.at[i, 'stedelijkh'] in [str(4), str(5)]:
         zip_codes.at[i, 'scenario'] = 'RMa'
-
-    print(zip_codes.at[i, 'BS_density'])
 
 zip_codes.to_file("zip_codes_with_scenarios.shp")

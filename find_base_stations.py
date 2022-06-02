@@ -10,6 +10,7 @@ import progressbar
 
 sys.setrecursionlimit(10000)
 
+#TODO maybe find the number of channels per operator? Is different from the number of BSs... - I am now doing this iteratively per provider per province.
 # code adapted from Bart Meyers
 
 def find_zip_code_region(params):
@@ -17,7 +18,6 @@ def find_zip_code_region(params):
     region = util.from_data(f'data/BSs/{params.filename}region.p')
     zip_codes = params.zip_codes
     if zip_code_region_data is None:
-        print(params.cities[0])
         if isinstance(params.cities[0], int):
             zip_code_region_data = zip_codes[zip_codes['postcode'].isin(params.cities)]
         else:
@@ -30,10 +30,11 @@ def find_zip_code_region(params):
     params.zip_code_region = zip_code_region_data
     return params
 
+
 def load_bs(params):
-    all_basestations = util.from_data(f'data/BSs/{params.filename}_all_basestations.p')
-    xs = util.from_data(f'data/BSs/{params.filename}_xs.p')
-    ys = util.from_data(f'data/BSs/{params.filename}_ys.p')
+    all_basestations = util.from_data(f'data/BSs/{params.bsfilename}_all_basestations.p')
+    xs = util.from_data(f'data/BSs/{params.bsfilename}_xs.p')
+    ys = util.from_data(f'data/BSs/{params.bsfilename}_ys.p')
 
     # all_basestations = None
     if all_basestations is None:
@@ -41,15 +42,16 @@ def load_bs(params):
         all_basestations = list()
         id = 0
         xs, ys = [], []
+        channels = 0
 
         with open(BS_PATH) as f:
             bss = json.load(f)
-            bar = progressbar.ProgressBar(maxval=len(bss), widgets=[
-                progressbar.Bar('=', f'Finding BSs [', ']'), ' ',
-                progressbar.Percentage(), ' ', progressbar.ETA()])
+            bar = progressbar.ProgressBar(maxval=len(bss), widgets=[progressbar.Bar('=', f'Finding BSs [', ']'), ' ',
+                                                                    progressbar.Percentage(), ' ', progressbar.ETA()])
             bar.start()
+
             # Loop over base stations
-            for key, index in zip(bss.keys(),range(len(bss))):
+            for key, index in zip(bss.keys(), range(len(bss))):
                 bar.update(index)
 
                 small_cell = False
@@ -74,53 +76,35 @@ def load_bs(params):
                     if Continue:
                         new_bs = BSO.BaseStation(id, radio, x, y)
 
-                        freq_dict = dict()
                         for key in bs.get("antennas").keys():
                             antenna = bs.get("antennas").get(key)
                             frequency = antenna.get("frequency")
                             main_direction = antenna.get('angle')
 
-                            power =  POWER_PERCENTAGE * (antenna.get("power") + 30)  # We convert ERP power in dBW to dBm
+                            power = POWER_PERCENTAGE * (antenna.get("power") + 30)  # We convert ERP power in dBW to dBm
                             height = bs.get('antennas')[str(0)].get("height")
                             provider, bandwidth = util.find_provider(frequency / 1e6)
-                            # if main_direction != 'Omnidirectional':
-                            #     if frequency in freq_dict.keys():
-                            #         freq_dict[frequency].append(main_direction)
-                            #     else:
-                            #         freq_dict[frequency] = [main_direction]
+
                             if provider in params.providers:
                                 new_bs.add_channel(key, new_bs.id, height, frequency, power, main_direction, bandwidth)
                                 new_bs.frequencies.add(frequency)
+                                channels += 1
 
                         if provider in params.providers:
                             powers = [channel.power for channel in new_bs.channels]
                             if max(powers) <= 17.8 + 30:  # 17.8 dBW is 60 W, that is the maximum power of a small cell.
                                 small_cell = True
 
-                        # TODO this was to find beamwidth, but I now assume that beamwidth is just constant
-                        # for channel in new_bs.channels:
-                        #     if channel.frequency in freq_dict.keys():
-                        #         angle_list = sorted(freq_dict[channel.frequency])
-                        #         if len(angle_list) > 1:
-                        #             index = angle_list.index(channel.main_direction)
-                        #             length = len(angle_list)
-                            #         beamwidth = ((angle_list[(index + 1) % length] - angle_list[index]) % 360) / 2 + (
-                            #                     (angle_list[index] - angle_list[(index - 1) % length]) % 360) / 2
-                            #         if beamwidth == 0:
-                            #             beamwidth = 360
-                            #     else:
-                            #         beamwidth = 360
-                            #
-                            # channel.beamwidth = beamwidth
-
                         new_bs.provider = provider
 
-                        if gpd.GeoSeries(unary_union(params.zip_code_region[params.zip_code_region['scenario'] == 'UMa'].geometry)).contains(
-                                Point(x, y)).bool():
+                        if gpd.GeoSeries(unary_union(
+                                params.zip_code_region[params.zip_code_region['scenario'] == 'UMa'].geometry)).contains(
+                            Point(x, y)).bool():
                             area_type = util.AreaType.UMA
                         elif gpd.GeoSeries(
-                                unary_union(params.zip_code_region[params.zip_code_region['scenario'] == 'RMa'].geometry)).contains(
-                                Point(x, y)).bool():
+                                unary_union(params.zip_code_region[
+                                                params.zip_code_region['scenario'] == 'RMa'].geometry)).contains(
+                            Point(x, y)).bool():
                             area_type = util.AreaType.RMA
                         else:
                             print('No type', x, y)
@@ -141,17 +125,18 @@ def load_bs(params):
         params.number_of_bs = len(all_basestations)
 
         params.initialize()
-
+        print(f'{params.bsfilename} has {channels} channels in {params.city_name}')
         print('Adding interferers...')
         for bs in all_basestations:
             for channel in bs.channels:
                 channel.find_interferers(params)
-                # TODO this is not an optimal algorithm yet.
+                # TODO this is not a good algorithm yet.
+        if len(params.providers) < 3:
+            print('Saving data...')
+            util.to_data(all_basestations, f'data/BSs/{params.bsfilename}_all_basestations.p')
+            util.to_data(xs, f'data/BSs/{params.bsfilename}_xs.p')
+            util.to_data(ys, f'data/BSs/{params.bsfilename}_ys.p')
 
-        print('Saving data...')
-        util.to_data(all_basestations, f'data/BSs/{params.filename}_all_basestations.p')
-        util.to_data(xs, f'data/BSs/{params.filename}_xs.p')
-        util.to_data(ys, f'data/BSs/{params.filename}_ys.p')
     else:
         params.xbs = xs
         params.ybs = ys
@@ -160,4 +145,3 @@ def load_bs(params):
 
         params.initialize()
     return params
-

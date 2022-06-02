@@ -3,9 +3,10 @@ import os
 import pandas as pd
 import numpy as np
 import seaborn as sns
+
 # code from Bart Meyers
 
-colors = sns.color_palette("Paired", n_colors = 100)
+colors = sns.color_palette("Paired", n_colors=100)
 # colors = ['#1f77b4', '#ff7f0e', '#2ca02c', '#d62728', '#9467bd', '#8c564b', '#e377c2', '#7f7f7f', '#bcbd22',
 #           '#17becf'] * 1000
 pd.set_option('display.max_columns', None)
@@ -43,14 +44,17 @@ UE_HEIGHT = 1.5  # height in meters
 BOLTZMANN = 1.38e-23
 TEMPERATURE = 283.15
 
-VERTICAL_BORE = 8 # degrees
+VERTICAL_BORE = 8  # degrees
 
 VERTICAL_BEAMWIDTH3DB = 65
 HORIZONTAL_BEAMWIDTH3DB = 65
 
-MINIMUM_SNR = 5 # dB
+MINIMUM_SNR = 5  # dB
 
-RATE_REQUIREMENT, FRACTION = {1: 40e6, 2:150e6, 3:1000e6}, {1:0.77, 2:0.2, 3:0.04}
+RATE_REQUIREMENT, FRACTION = {1: 40e6, 2: 150e6, 3: 1000e6}, {1: 0.77, 2: 0.2, 3: 0.04}
+RATE_REQUIREMENT, FRACTION = {1: 10e6, 2: 100e6, 3: 1000e6}, {1: 1, 2: 0, 3: 0}
 
-CUTOFF_VALUE_INTERFERENCE = 0 # 5 highest signal BSs will not interfere.
-POWER_PERCENTAGE = 0.75
+CUTOFF_VALUE_INTERFERENCE = 2  # 5 highest signal BSs will not interfere.
+POWER_PERCENTAGE = 1
+
+#TODO change the power percentage!
