@@ -26,8 +26,9 @@ def make_graph(p, links):
         if freq not in freq_color:
             freq_color[freq] = i
             i +=1
-        colorlist.append(colors[freq_color[freq]])
-        nodesize.append(1)
+        # colorlist.append(colors[freq_color[freq]])
+        colorlist.append('purple')
+        nodesize.append(10)
         labels[node] = f'{freq_color[freq]}'
     for node in range(number_of_users):
         G.add_node(node + number_of_bs, x = p.x_user[node], y = p.y_user[node])
@@ -38,7 +39,7 @@ def make_graph(p, links):
         for user in range(number_of_users):
             if links[user, bs] > 0.1:
                 G.add_edge(user + number_of_bs, bs)
-                edgesize.append(0.1)
+                edgesize.append(0.2)
                 edgecolor.append('gray')
     return G, colorlist, nodesize, edgesize, labels, edgecolor, freq_color
 
@@ -50,7 +51,7 @@ def draw_graph(params, links, ax):
         pos[node] = (nx.get_node_attributes(G, 'x')[node], nx.get_node_attributes(G, 'y')[node])
     nx.draw_networkx_nodes(G, pos, nodelist=G.nodes(), node_size=nodesize,
                            node_color=colorlist, ax=ax)
-    nx.draw_networkx_edges(G, pos, edge_color=edgecolor, alpha=0.5, width=edgesize)
+    nx.draw_networkx_edges(G, pos, edge_color=edgecolor, alpha=0.7, width=edgesize)
     # nx.draw_networkx_labels(G, pos, labels, font_size=2)
 
 

@@ -5,7 +5,6 @@ import models as models
 import random
 import numpy as np
 
-
 # code from Bart Meyers
 
 class BaseStation:
@@ -77,7 +76,7 @@ class Channel:
             if bs != self_bs:
                 if self.frequency in bs.frequencies:
                     if 0 < util.distance_2d(bs.x, bs.y, self_bs.x,
-                                            self_bs.y) < 10000:  # TODO ASSUMPTION that only interferers within 10km radius can interfere
+                                            self_bs.y) < 10000:  # ASSUMPTION that only interferers within 10km radius can interfere
                         interference_level = models.highest_snr(bs, self_bs, [i for i in bs.channels if
                                                                                         i.frequency == self.frequency], p)
                         interferers.append(bs.id)

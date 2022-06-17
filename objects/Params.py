@@ -18,7 +18,7 @@ class Parameters:
             self.cities = util.find_cities(province)
             self.city_name = province
         elif city_list is None:
-            self.cities = None
+            self.cities = util.find_cities('Netherlands')
             self.city_name = 'Netherlands'
         else:
             self.cities = city_list
@@ -32,13 +32,13 @@ class Parameters:
         if len(provider_list) == 1:
             provider = provider_list[0]
             if provider == 'KPN':
-                percentage_MNO = BS_KPN/BS_total
+                percentage_MNO = 0.41 #BS_KPN/BS_total
                 print('KPN', percentage_MNO)
             elif provider == 'T-Mobile':
-                percentage_MNO = BS_Tmobile/BS_total
+                percentage_MNO = 0.41 #BS_Tmobile/BS_total
                 print('T-Mobile', percentage_MNO)
             else:
-                percentage_MNO = BS_Vodafone/BS_total
+                percentage_MNO = 0.18 #BS_Vodafone/BS_total
                 print('Vodafone', percentage_MNO)
         else:
             provider = 'all_MNOs'

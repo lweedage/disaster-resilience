@@ -10,9 +10,5 @@ class UserEquipment:
         self.rate_requirement = rate_requirement
         self.type = type
 
-
     def __str__(self):
         return "UE[{}], requested capacity: {}, x: {}, y: {}".format(self.id, self.rate_requirement, self.x, self.y)
-
-    def reset(self):
-        self.link = None

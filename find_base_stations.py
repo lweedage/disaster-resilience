@@ -131,11 +131,10 @@ def load_bs(params):
             for channel in bs.channels:
                 channel.find_interferers(params)
                 # TODO this is not a good algorithm yet.
-        if len(params.providers) < 3:
-            print('Saving data...')
-            util.to_data(all_basestations, f'data/BSs/{params.bsfilename}_all_basestations.p')
-            util.to_data(xs, f'data/BSs/{params.bsfilename}_xs.p')
-            util.to_data(ys, f'data/BSs/{params.bsfilename}_ys.p')
+        print('Saving data...')
+        util.to_data(all_basestations, f'data/BSs/{params.bsfilename}_all_basestations.p')
+        util.to_data(xs, f'data/BSs/{params.bsfilename}_xs.p')
+        util.to_data(ys, f'data/BSs/{params.bsfilename}_ys.p')
 
     else:
         params.xbs = xs

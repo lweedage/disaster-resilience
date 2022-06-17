@@ -65,10 +65,20 @@ def find_cities(municipality):
     with open("data/cities_per_province") as f:
         data = f.read()
         data = data.split('\n')
-    for line in data:
-        line = line.split(':')
-        if line[0] == municipality:
-            return line[1].split(',')
+    if municipality == 'Netherlands':
+        print(municipality)
+        cities = []
+        for line in data:
+            line = line.split(':')
+            for city in line[1].split(','):
+                cities.append(city)
+        print(cities)
+        return cities
+    else:
+        for line in data:
+            line = line.split(':')
+            if line[0] == municipality:
+                return line[1].split(',')
 
 def find_provider(frequency): # frequency in MHz
     frequency_dict = {(758, 768): 'Vodafone', (768, 778): 'KPN', (778, 788): 'T-Mobile', (791, 801): 'T-Mobile', (801, 811): 'Vodafone', (811, 821): 'KPN', (925, 935): 'Vodafone', (935, 945): 'KPN', (945, 960): 'T-Mobile',
