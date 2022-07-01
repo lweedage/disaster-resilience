@@ -72,7 +72,6 @@ def find_cities(municipality):
             line = line.split(':')
             for city in line[1].split(','):
                 cities.append(city)
-        print(cities)
         return cities
     else:
         for line in data:
@@ -123,3 +122,32 @@ def find_geo(coord_1, coord_2):
     dx = coord_2[0] - coord_1[0]
     radians = math.atan2(dy, dx)
     return np.degrees(radians)
+
+def municipality_dict():
+    with open("data/zipcode_to_municipality_number.csv", "r") as f:
+        reader = csv.reader(f, delimiter=';')
+        next(reader, None)
+        lines = list(reader)
+
+    municipality_code = dict()
+    for line in lines:
+        municipality_code[line[0][:-2]] = int(line[3])
+    municipality_code['9914'] = 24
+    municipality_code['9915'] = 24
+
+    with open("data/municipalities.csv", "r") as f:
+        reader = csv.reader(f, delimiter=';')
+        next(reader, None)
+        lines = list(reader)
+
+    code = dict()
+    for line in lines:
+        code[int(line[0])] = line[1]
+
+    mun_dict = dict()
+    for k, v in municipality_code.items():
+        if code[v] in mun_dict.keys():
+            mun_dict[code[v]].append(int(k))
+        else:
+            mun_dict[code[v]] = [int(k)]
+    return mun_dict

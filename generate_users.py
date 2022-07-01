@@ -32,9 +32,9 @@ def get_population(zip_codes_region, percentage):
     return xs, ys
 
 def generate_users(params):
-    all_users = util.from_data(f'data/users/{params.filename}{params.seed}_all_users.p')
-    xs = util.from_data(f'data/users/{params.filename}{params.seed}_xs.p')
-    ys = util.from_data(f'data/users/{params.filename}{params.seed}_ys.p')
+    all_users = util.from_data(f'data/users/{params.userfilename}{params.seed}_all_users.p')
+    xs = util.from_data(f'data/users/{params.userfilename}{params.seed}_xs.p')
+    ys = util.from_data(f'data/users/{params.userfilename}{params.seed}_ys.p')
 
     if all_users is None:
         print('Users are not stored in memory')
@@ -50,9 +50,9 @@ def generate_users(params):
                 new_user = UE.UserEquipment(i, xs[i], ys[i], rate_requirement = settings.RATE_REQUIREMENT[3], type = 3)
             all_users.append(new_user)
 
-        util.to_data(all_users, f'data/users/{params.filename}{params.seed}_all_users.p')
-        util.to_data(xs, f'data/users/{params.filename}{params.seed}_xs.p')
-        util.to_data(ys, f'data/users/{params.filename}{params.seed}_ys.p')
+        util.to_data(all_users, f'data/users/{params.userfilename}{params.seed}_all_users.p')
+        util.to_data(xs, f'data/users/{params.userfilename}{params.seed}_xs.p')
+        util.to_data(ys, f'data/users/{params.userfilename}{params.seed}_ys.p')
 
     params.users = all_users
     params.x_user = xs
@@ -61,9 +61,9 @@ def generate_users(params):
     return params
 
 def generate_users_grid(params, delta):
-    all_users = util.from_data(f'data/users/{params.filename}{params.seed}_all_users_grid.p')
-    x_user = util.from_data(f'data/users/{params.filename}{params.seed}_xs_grid.p')
-    y_user = util.from_data(f'data/users/{params.filename}{params.seed}_ys_grid.p')
+    all_users = util.from_data(f'data/users/{params.userfilename}{params.seed}_all_users_grid.p')
+    x_user = util.from_data(f'data/users/{params.userfilename}{params.seed}_xs_grid.p')
+    y_user = util.from_data(f'data/users/{params.userfilename}{params.seed}_ys_grid.p')
 
     if all_users is None:
         print('Users are not stored in memory')
@@ -100,9 +100,9 @@ def generate_users_grid(params, delta):
                 x_user.append(xs[j])
                 y_user.append(ys[j])
 
-        util.to_data(all_users, f'data/users/{params.filename}{params.seed}_all_users_grid.p')
-        util.to_data(x_user, f'data/users/{params.filename}{params.seed}_xs_grid.p')
-        util.to_data(y_user, f'data/users/{params.filename}{params.seed}_ys_grid.p')
+        util.to_data(all_users, f'data/users/{params.userfilename}{params.seed}_all_users_grid.p')
+        util.to_data(x_user, f'data/users/{params.userfilename}{params.seed}_xs_grid.p')
+        util.to_data(y_user, f'data/users/{params.userfilename}{params.seed}_ys_grid.p')
 
     params.users = all_users
     params.x_user = x_user

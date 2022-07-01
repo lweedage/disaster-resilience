@@ -6,6 +6,7 @@ import util
 import progressbar
 from shapely.geometry import Point
 from model_3GPP import *
+from scipy.sparse import lil_matrix
 # code from Bart Meyers
 
 def snr(user, base_station, channel, params):
@@ -21,13 +22,13 @@ def snr(user, base_station, channel, params):
                                          d2d)
     else:
         antenna_gain = 0
-    path_loss = pathloss(params, user.id, base_station.id, base_station.area_type, d2d, d3d, channel.frequency,
+    pl, params = pathloss(params, user.id, base_station.id, base_station.area_type, d2d, d3d, channel.frequency,
                          channel.height)
 
     bandwidth = channel.bandwidth
     radio = base_station.radio
     noise = find_noise(bandwidth, radio)
-    return power - path_loss + antenna_gain - noise  # in dB
+    return power - pl + antenna_gain - noise, params  # in dB
 
 def snr_interf(bs, base_station, channel, params):
     user_coords = (bs.x, bs.y)
@@ -42,8 +43,8 @@ def snr_interf(bs, base_station, channel, params):
                                          d2d)
     else:
         antenna_gain = 0
-    path_loss = pathloss_interf(params, bs.id, base_station.id, base_station.area_type, d2d, d3d, channel.frequency,
-                         channel.height)
+    path_loss, _ = pathloss(params, bs.id, base_station.id, base_station.area_type, d2d, d3d, channel.frequency,
+                         channel.height, save = False)
 
     bandwidth = channel.bandwidth
     radio = base_station.radio
@@ -55,25 +56,19 @@ def sinr(user, base_station, channel, params):
     bs_coords = (base_station.x, base_station.y)
     power = channel.power
 
-    # todo Not all antenna's have three sectors.
-
     d2d = util.distance_2d(base_station.x, base_station.y, user_coords[0], user_coords[1])
     d3d = util.distance_3d(h1=channel.height, h2=settings.UE_HEIGHT, d2d=d2d)
 
-    if channel.main_direction != 'Omnidirectional':
-        antenna_gain = find_antenna_gain(channel.main_direction, util.find_geo(bs_coords, user_coords), channel.height,
+    antenna_gain = find_antenna_gain(channel.main_direction, util.find_geo(bs_coords, user_coords), channel.height,
                                          d2d)
-    else:
-        antenna_gain = 0 # TODO what to do with omnidirectional antennas?
-
-    path_loss = pathloss(params, user.id, base_station.id, base_station.area_type, d2d, d3d, channel.frequency,
+    path_loss, params = pathloss(params, user.id, base_station.id, base_station.area_type, d2d, d3d, channel.frequency,
                          channel.height)
 
     bandwidth = channel.bandwidth
     radio = base_station.radio
     noise = find_noise(bandwidth, radio)
-    interf = interference(params, user.id, channel.frequency, user_coords, channel.bs_interferers, user_height=settings.UE_HEIGHT)
-    return util.to_db((util.to_pwr(power) * util.to_pwr(antenna_gain)/util.to_pwr(path_loss))/(util.to_pwr(noise) + interf))
+    interf, params = interference(params, user.id, base_station.id, channel.frequency, user_coords, channel.bs_interferers, user_height=settings.UE_HEIGHT)
+    return util.to_db((util.to_pwr(power) * util.to_pwr(antenna_gain)/util.to_pwr(path_loss))/(util.to_pwr(noise) + interf)), params
 
 
 def highest_snr(bs, base_station, channels, params):
@@ -85,20 +80,19 @@ def highest_snr(bs, base_station, channels, params):
 
 def find_antenna_gain(bore, geo, height_bs, d2d):
     A_vertical = vertical_gain(settings.UE_HEIGHT, height_bs, d2d)
-    A_vertical = 0 # TODO change if we want something else?
+    # A_vertical = 30
     A_horizontal = horizontal_gain(bore, geo)
     return - min(-(A_horizontal + A_vertical), 30)
 
 
 def vertical_gain(height_user, height_bs, distance2d):
-    vertical_angle = np.degrees(
-        math.atan((height_bs - height_user) / distance2d)) - settings.VERTICAL_BORE  # in degrees
-    return - min(12 * ((vertical_angle) / settings.VERTICAL_BEAMWIDTH3DB) ** 2, 30)  # I suspect that the 90 - is wrong
+    vertical_angle = math.atan((height_bs - height_user) / distance2d) - settings.VERTICAL_BORE  # in radians
+    return - min(util.to_db(12 * (vertical_angle / settings.VERTICAL_BEAMWIDTH3DB) ** 2), 30)  # I suspect that the 90 - is wrong
 
 
 def horizontal_gain(bore, geo):
     horizontal_angle = bore - geo  # in degrees
-    return - min(12 * (horizontal_angle / settings.HORIZONTAL_BEAMWIDTH3DB) ** 2, 30)
+    return - min(util.to_db(12 * (horizontal_angle / settings.HORIZONTAL_BEAMWIDTH3DB) ** 2), 30)
 
 
 def shannon_capacity(snr, bandwidth):
@@ -123,51 +117,50 @@ def find_closest_angle(bs_coords,user_coords, directions, id_s):
     geo = util.find_geo(bs_coords, user_coords)
     if geo < 0:
         geo += 360
-    directions = [min(abs(bore - geo), abs(bore - geo - 360)) for bore in directions]
-    return int(id_s[np.argmin(directions)])
+    dirs = [min(abs(bore - geo), abs(bore - geo - 360)) for bore in directions]
+    return int(id_s[np.argmin(dirs)])
 
 
-def interference(params, user_id, freq, user_coords, bs_interferers, user_height):
-    interf = 0
-    for base_station in bs_interferers:
-        OMNI = False
-        # find the channel with the direction closest to the BS, as sectorized antenna's will not all interfere with a user (when on the same freq)
-        bs_coords = (base_station.x, base_station.y)
-        directions = list()
-        ids = list()
-        for channel in base_station.channels:
-            if channel.frequency == freq:
-                if channel.main_direction != 'Omnidirectional':
+def interference(params, user_id, bs_id, freq, user_coords, bs_interferers, user_height):
+    interf = []
+    if params.interference[freq][user_id, bs_id] != 0:
+        return params.interference[freq][user_id, bs_id], params
+    else:
+        for base_station in bs_interferers:
+            # find the channel with the direction closest to the BS, as sectorized antenna's will not all interfere with a user (when on the same freq)
+            bs_coords = (base_station.x, base_station.y)
+            directions = list()
+            ids = list()
+
+            for channel in base_station.channels:
+                if channel.frequency == freq:
                     directions.append(channel.main_direction)
                     ids.append(channel.id)
-                else:
-                    OMNI = True
-                    channel_id = int(channel.id)
-        if not OMNI:
+
             channel_id = find_closest_angle(bs_coords, user_coords, directions, ids)
 
-        for c in base_station.channels:
-            if int(c.id) == channel_id:
-                interfering_channel = c
+            for c in base_station.channels:
+                if int(c.id) == channel_id:
+                    interfering_channel = c
 
-        power = interfering_channel.power
+            power = interfering_channel.power
 
-        d2d = util.distance_2d(bs_coords[0], bs_coords[1], user_coords[0], user_coords[1])
-        d3d = util.distance_3d(h1=interfering_channel.height, h2=user_height, d2d=d2d)
+            d2d = util.distance_2d(bs_coords[0], bs_coords[1], user_coords[0], user_coords[1])
+            d3d = util.distance_3d(h1=interfering_channel.height, h2=user_height, d2d=d2d)
 
-        if interfering_channel.main_direction != 'Omnidirectional':
             antenna_gain = find_antenna_gain(interfering_channel.main_direction, util.find_geo(bs_coords, user_coords),
-                                             interfering_channel.height, d2d)
-        else:
-            antenna_gain = -30  # TODO this is not true yet
+                                                 interfering_channel.height, d2d)
 
-        path_loss = pathloss(params, user_id, base_station.id, base_station.area_type, d2d, d3d, interfering_channel.frequency,
-                             interfering_channel.height)
-        interf += util.to_pwr(power + antenna_gain - path_loss)
-    if interf > 0:
-        return interf
-    else:
-        return 0
+            path_loss, params = pathloss(params, user_id, base_station.id, base_station.area_type, d2d, d3d, interfering_channel.frequency,
+                                 interfering_channel.height)
+            interf.append(util.to_pwr(power + antenna_gain - path_loss))
+
+        if len(interf) > 0:
+            params.interference[freq][user_id, bs_id] = sum(interf)
+            return sum(interf), params
+        else:
+            params.interference[freq][user_id, bs_id] = 0
+            return 0, params
 
 
 def find_links(p):
@@ -181,10 +174,10 @@ def find_links(p):
     channel_link = util.from_data(f'data/Realisations/{p.filename}{p.seed}_channel_link.p')
 
     if links is None:
-        links = np.zeros((p.number_of_users, p.number_of_bs))
-        snrs = np.zeros((p.number_of_users, p.number_of_bs))
-        sinrs = np.zeros((p.number_of_users, p.number_of_bs))
-        channel_link = np.zeros((p.number_of_users, p.number_of_bs))
+        links = lil_matrix((p.number_of_users, p.number_of_bs))
+        snrs = lil_matrix((p.number_of_users, p.number_of_bs))
+        sinrs = lil_matrix((p.number_of_users, p.number_of_bs))
+        channel_link = lil_matrix((p.number_of_users, p.number_of_bs))
         capacities = np.zeros(p.number_of_users)
         FDP = np.zeros(p.number_of_users)
         FSP = np.zeros(p.number_of_users)
@@ -198,19 +191,19 @@ def find_links(p):
             bar.update(int(user.id))
             user_coords = (user.x, user.y)
             BSs = util.find_closest_BS(user_coords, p.xbs, p.ybs)
-            best_measure = - math.inf
-            for bs in BSs[:25]:  # assuming that the highest SNR BS will be within the closest 25 BSs
+            best_SINR = - math.inf
+            measure = -math.inf
+
+            for bs in BSs[:10]:  # assuming that the highest SNR BS will be within the closest 10 BSs
                 base_station = p.BaseStations[bs]
                 for channel in base_station.channels:
-                    SINR = sinr(user, base_station, channel, p)
-                    # SINR = snr(user, base_station, channel, p) #TODO I now base it on SNR ipv SINR
-                    if SINR / max(1, len(channel.users)) > best_measure:
+                    SINR, p = sinr(user, base_station, channel, p)
+                    if SINR / max(1, channel.connected_users) > measure:
                         best_bs = bs
                         channel_id = int(channel.id)
                         best_SINR = SINR
-                        best_measure = SINR / max(1, len(channel.users))
-                        SNR = snr(user, base_station, channel, p)
-
+                        measure = SINR/(max(1, channel.connected_users))
+                        SNR, p = snr(user, base_station, channel, p)
             if best_SINR >= settings.MINIMUM_SNR:
                 sinrs[user.id, best_bs] = best_SINR
                 channel_link[user.id, best_bs] = channel_id
@@ -221,6 +214,8 @@ def find_links(p):
                 snrs[user.id, best_bs] = SNR
             else:
                 FDP[user.id] = 1
+            # p.path_loss[user.id, :] = 0
+            # print(best_SINR, SNR)
         bar.finish()
 
         # for now, we share the bandwidth equally over the users. water-filling algorithm would also be possible? Or proportionally fair allocation
@@ -233,7 +228,7 @@ def find_links(p):
                     # then, we find the required bandwidth per user
                     BW = [p.users[user].rate_requirement/SE[i] for i, user in zip(range(len(SE)), c.users)]
                     # if there is more BW required than the channel has, we decrease the BW with that percentage for everyone
-                    BW = np.multiply(c.bandwidth/sum(BW), BW)
+                    BW = np.multiply(min(len(c.users), 8) * c.bandwidth/sum(BW), BW) #TODO I assume a BS has 8 channels?
                     for i, user in zip(range(len(c.users)), c.users):
                         capacity = shannon_capacity(sinrs[user, bs.id], BW[i])
                         capacities[user] += capacity
@@ -268,30 +263,43 @@ def proportional_bandwidth(bandwidth, SE, index):
 #                 capacity[user_id, bs_id] = shannon_capacity(SNR[user.id, bs.id], bandwidth)
 #     return capacity
 
-def specify_measures(p, fdp, fsp, satisfaction_level):
-    p.zip_code_region['FDP'] = [[]] * len(p.zip_code_region)
-    p.zip_code_region['FSP'] = [[]] * len(p.zip_code_region)
-    p.zip_code_region['satisfaction'] = [[]] * len(p.zip_code_region)
+def specify_measures(p, fsp, fdp, satisfaction_level, cap):
+    FDP = util.from_data(f'data/Realisations/FDP_per_region{p.filename}.p')
+    if FDP is None:
+        FDP = dict()
+        FSP = dict()
+        satisfaction = dict()
+        capacity = dict()
 
-    bar = progressbar.ProgressBar(maxval=p.number_of_users, widgets=[
-        progressbar.Bar('=', f'Finding FDP/FSP/sat {p.filename} [', ']'), ' ',
-        progressbar.Percentage(), ' ', progressbar.ETA()])
-    bar.start()
+        bar = progressbar.ProgressBar(maxval=p.number_of_users, widgets=[
+            progressbar.Bar('=', f'Finding FDP/FSP/sat {p.filename} [', ']'), ' ',
+            progressbar.Percentage(), ' ', progressbar.ETA()])
+        bar.start()
 
-    for i, x, y in zip(range(p.number_of_users), p.x_user, p.y_user):
-        bar.update(i)
-        point = Point(x, y)
-        condition = p.zip_code_region['geometry'].contains(point)
+        for i, x, y in zip(range(p.number_of_users), p.x_user, p.y_user):
+            bar.update(i)
+            point = Point(x, y)
+            condition = p.zip_code_region['geometry'].contains(point)
+            zipcode = p.zip_code_region.loc[condition]['postcode'].item()
 
-        p.zip_code_region.loc[condition, 'FDP'] = p.zip_code_region.loc[condition, 'FDP'].apply(lambda x: x + [fdp[i]])
-        p.zip_code_region.loc[condition, 'FSP'] = p.zip_code_region.loc[condition, 'FSP'].apply(lambda x: x + [fsp[i]])
-        p.zip_code_region.loc[condition, 'satisfaction'] = p.zip_code_region.loc[condition, 'satisfaction'].apply(lambda x: x + [satisfaction_level[i]])
+            if zipcode in FDP.keys():
+                FDP[zipcode].append(fdp[i])
+                FSP[zipcode].append(fsp[i])
+                satisfaction[zipcode].append(satisfaction_level[i])
+                capacity[zipcode].append(cap[i])
 
-    bar.finish()
-    p.zip_code_region['averageFDP'] = p.zip_code_region['FDP'].apply(lambda x: sum(x)/len(x))
-    p.zip_code_region['averageFSP'] = p.zip_code_region['FSP'].apply(lambda x: sum(x)/len(x))
-    p.zip_code_region['average_satisfaction'] = p.zip_code_region['satisfaction'].apply(lambda x: sum(x)/len(x))
-    return p
+            else:
+                FDP[zipcode] = [fdp[i]]
+                FSP[zipcode] = [fsp[i]]
+                satisfaction[zipcode] = [satisfaction_level[i]]
+                capacity[zipcode] = [cap[i]]
+
+        bar.finish()
+
+        util.to_data(FDP, f'data/Realisations/FDP_per_region{p.filename}.p')
+        util.to_data(FSP, f'data/Realisations/FSP_per_region{p.filename}.p')
+        util.to_data(satisfaction, f'data/Realisations/satisfaction_per_region{p.filename}.p')
+        util.to_data(capacity, f'data/Realisations/capacity_per_region{p.filename}.p')
 
 if __name__ == '__main__':
     angles = np.arange(-180, 180, 1)

@@ -1,8 +1,8 @@
-import matplotlib.pyplot as plt
 import geopandas as gpd
-import pandas as pd
-import util
+import matplotlib.pyplot as plt
+
 import find_base_stations as antenna
+import util
 from settings import *
 
 # Retrieve zip code population + area data and make a region with specified zip codes

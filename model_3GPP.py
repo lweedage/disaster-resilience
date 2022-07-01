@@ -1,155 +1,125 @@
 import settings
 import util
+import objects.Params as p
 
 import numpy as np
 import math
+import matplotlib.pyplot as plt
+
 
 def pathloss(params, u_id, bs_id, area_type, distance_2d, distance_3d, frequency, bs_height,
-             ue_height=settings.UE_HEIGHT):
-    avg_building_height = settings.AVG_BUILDING_HEIGHT
-    avg_street_width = settings.AVG_STREET_WIDTH
-    p = params.los_probabilities[u_id, bs_id]
-    los = (p <= los_probability(distance_2d, area_type))
-
-    if area_type == util.AreaType.UMA:
-        pl_los = pathloss_urban_los(distance_2d, distance_3d, frequency, ue_height,
-                                    bs_height, 28, 22, 9)
-        if los:
-            return pl_los + atmospheric_attenuation(frequency, distance_2d) + params.fading4[u_id, bs_id]
-        else:
-            pl_nlos = pathloss_urban_nlos(distance_3d, frequency, ue_height,
-                                          13.54, 39.08, 20, 0.6)
-            return max(pl_los, pl_nlos) + atmospheric_attenuation(frequency, distance_2d) + params.fading6[u_id, bs_id]
-    elif area_type == util.AreaType.UMI:
-        pl_los = pathloss_urban_los(distance_2d, distance_3d, frequency, ue_height,
-                                    bs_height, 32.4, 21, 9.5)
-        if los:
-            return pl_los + atmospheric_attenuation(frequency, distance_2d) + params.fading4[u_id, bs_id]
-        else:
-            pl_nlos = pathloss_urban_nlos(distance_3d, frequency, ue_height,
-                                          22.4, 35.3, 21.3, 0.3)
-            return max(pl_los, pl_nlos) + atmospheric_attenuation(frequency, distance_2d) + params.fading78[u_id, bs_id]
-    elif area_type == util.AreaType.RMA:
-        if los:
-            bp = breakpoint_distance(frequency, bs_height)
-            if distance_2d < 10:
-                return settings.MCL
-            elif distance_2d <= bp:
-                return pathloss_rma_los_pl1(distance_3d, avg_building_height, frequency) + \
-                       atmospheric_attenuation(frequency, distance_2d) + params.fading4[u_id, bs_id]
-            elif distance_2d <= 10000:
-                pl1 = pathloss_rma_los_pl1(bp, avg_building_height, frequency)
-                return pl1 + 40 * np.log10(distance_3d / bp) + atmospheric_attenuation(frequency,
-                                                                                       distance_2d) + params.fading6[
-                           u_id, bs_id]
-            else:  # TODO This is not correct yet
-                pl1 = pathloss_rma_los_pl1(bp, avg_building_height, frequency)
-                return pl1 + 40 * np.log10(distance_3d / bp) + atmospheric_attenuation(frequency,
-                                                                                       distance_2d) + params.fading6[
-                           u_id, bs_id]
-        else:  # NLoS
-            if distance_2d < 10:
-                return settings.MCL
-            elif distance_2d <= 5000:
-                nlos_pl = 161.04 - 7.1 * np.log10(avg_street_width) + 7.5 * np.log10(avg_building_height) \
-                          - (24.37 - 3.7 * (avg_building_height / max(1, bs_height)) ** 2) * np.log10(
-                    bs_height) \
-                          + (43.42 - 3.1 * np.log10(bs_height)) * (np.log10(distance_3d) - 3) \
-                          + 20 * np.log10(frequency / 1e9) - (3.2 * np.log10(11.75 * ue_height) - 4.97)
-
-                los_pl = pathloss(params, u_id, bs_id, util.AreaType.UMA, distance_2d, distance_3d, frequency,
-                                  bs_height,
-                                  ue_height=settings.UE_HEIGHT)  # todo THIS IS WRONG!
-                return max(los_pl, nlos_pl) + atmospheric_attenuation(frequency,
-                                                                      distance_2d) + params.fading8[u_id, bs_id]
-            else:  # TODO This is not correct
-                nlos_pl = 161.04 - 7.1 * np.log10(avg_street_width) + 7.5 * np.log10(avg_building_height) \
-                          - (24.37 - 3.7 * (avg_building_height / max(1, bs_height)) ** 2) * np.log10(
-                    bs_height) \
-                          + (43.42 - 3.1 * np.log10(bs_height)) * (np.log10(distance_3d) - 3) \
-                          + 20 * np.log10(frequency) - (3.2 * np.log10(11.75 * ue_height) - 4.97)
-
-                los_pl = pathloss(params, u_id, bs_id, util.AreaType.UMA, distance_2d, distance_3d, frequency,
-                                  bs_height,
-                                  ue_height=settings.UE_HEIGHT)  # todo THIS IS WRONG!
-                return max(los_pl, nlos_pl) + atmospheric_attenuation(frequency,
-                                                                      distance_2d) + params.fading8[u_id, bs_id]
+             ue_height=settings.UE_HEIGHT, save=True):
+    if params.path_loss[frequency][u_id, bs_id] != 0 and save:
+        return params.path_loss[frequency][u_id, bs_id], params
     else:
-        return math.inf
+        avg_building_height = settings.AVG_BUILDING_HEIGHT
+        avg_street_width = settings.AVG_STREET_WIDTH
+        if params.los_probabilities[u_id, bs_id] == 0:
+            params.los_probabilities[u_id, bs_id] = np.random.uniform(0, 1)
+        p = params.los_probabilities[u_id, bs_id]
+        los = (p <= los_probability(distance_2d, area_type))
 
-        # raise ValueError("Unknown area type")
-def pathloss_interf(params, u_id, bs_id, area_type, distance_2d, distance_3d, frequency, bs_height,
-             ue_height=settings.UE_HEIGHT):
-    avg_building_height = settings.AVG_BUILDING_HEIGHT
-    avg_street_width = settings.AVG_STREET_WIDTH
-    p = 0
-    los = (p <= los_probability(distance_2d, area_type))
-
-    if area_type == util.AreaType.UMA:
-        pl_los = pathloss_urban_los(distance_2d, distance_3d, frequency, ue_height,
-                                    bs_height, 28, 22, 9)
-        if los:
-            return pl_los + atmospheric_attenuation(frequency, distance_2d)
+        if params.rain:
+            rain = rain_attenuation(frequency, distance_2d, params.rain)
         else:
-            pl_nlos = pathloss_urban_nlos(distance_3d, frequency, ue_height,
-                                          13.54, 39.08, 20, 0.6)
-            return max(pl_los, pl_nlos) + atmospheric_attenuation(frequency, distance_2d)
-    elif area_type == util.AreaType.UMI:
-        pl_los = pathloss_urban_los(distance_2d, distance_3d, frequency, ue_height,
-                                    bs_height, 32.4, 21, 9.5)
-        if los:
-            return pl_los + atmospheric_attenuation(frequency, distance_2d)
+            rain = 0
+
+        if area_type == util.AreaType.UMA:
+            pl_los = pathloss_urban_los(distance_2d, distance_3d, frequency, ue_height,
+                                        bs_height, 28, 22, 9)
+            if los:
+                if params.fading4[u_id, bs_id] == 0:
+                    params.fading4[u_id, bs_id] = np.random.normal(0, 4)
+                pl = pl_los + rain + params.fading4[u_id, bs_id]
+            else:
+                pl_nlos = pathloss_urban_nlos(distance_3d, frequency, ue_height,
+                                              13.54, 39.08, 20, 0.6)
+                if params.fading6[u_id, bs_id] == 0:
+                    params.fading6[u_id, bs_id] = np.random.normal(0, 6)
+                pl = max(pl_los, pl_nlos) + rain + params.fading6[u_id, bs_id]
+        elif area_type == util.AreaType.UMI:
+            pl_los = pathloss_urban_los(distance_2d, distance_3d, frequency, ue_height,
+                                        bs_height, 32.4, 21, 9.5)
+            if los:
+                if params.fading4[u_id, bs_id] == 0:
+                    params.fading4[u_id, bs_id] = np.random.normal(0, 4)
+                pl = pl_los + rain + params.fading4[u_id, bs_id]
+
+            else:
+                pl_nlos = pathloss_urban_nlos(distance_3d, frequency, ue_height,
+                                              22.4, 35.3, 21.3, 0.3)
+                if params.fading78[u_id, bs_id] == 0:
+                    params.fading78[u_id, bs_id] = np.random.normal(0, 7.8)
+                pl = max(pl_los, pl_nlos) + rain + params.fading78[u_id, bs_id]
+        elif area_type == util.AreaType.RMA:
+            if los:
+                bp = breakpoint_distance(frequency, bs_height)
+                if distance_2d < 10:
+                    if params.fading4[u_id, bs_id] == 0:
+                        params.fading4[u_id, bs_id] = np.random.normal(0, 4)
+                    pl = pathloss_rma_los_pl1(util.distance_3d(bs_height, ue_height, d2d=10), avg_building_height,
+                                              frequency) + rain + params.fading4[u_id, bs_id]
+                elif distance_2d <= bp:
+                    if params.fading4[u_id, bs_id] == 0:
+                        params.fading4[u_id, bs_id] = np.random.normal(0, 4)
+                    pl = pathloss_rma_los_pl1(distance_3d, avg_building_height, frequency) + rain + params.fading4[
+                        u_id, bs_id]
+                elif distance_2d <= 10000:
+                    pl1 = pathloss_rma_los_pl1(bp, avg_building_height, frequency)
+                    if params.fading6[u_id, bs_id] == 0:
+                        params.fading6[u_id, bs_id] = np.random.normal(0, 6)
+                    pl = pl1 + 40 * np.log10(distance_3d / bp) + rain + params.fading6[u_id, bs_id]
+                else:
+                    # TODO: Look at this - what happens if RMA > 10 km?
+                    pl1 = pathloss_rma_los_pl1(bp, avg_building_height, frequency)
+                    if params.fading6[u_id, bs_id] == 0:
+                        params.fading6[u_id, bs_id] = np.random.normal(0, 6)
+                    pl = pl1 + 40 * np.log10(distance_3d / bp) + rain + params.fading6[u_id, bs_id]
+            else:  # NLoS
+                if distance_2d < 10:
+                    distance_3d = util.distance_3d(bs_height, ue_height, d2d=10)
+                    nlos_pl = 161.04 - 7.1 * np.log10(avg_street_width) + 7.5 * np.log10(avg_building_height) \
+                              - (24.37 - 3.7 * (avg_building_height / max(1, bs_height)) ** 2) * np.log10(
+                        bs_height) + (43.42 - 3.1 * np.log10(bs_height)) * (np.log10(distance_3d) - 3) \
+                              + 20 * np.log10(frequency / 1e9) - (3.2 * np.log10(11.75 * ue_height) - 4.97)
+
+                    los_pl = pathloss_urban_los(10, distance_3d, frequency, ue_height, bs_height, 28, 22, 9)
+                    if params.fading8[u_id, bs_id] == 0:
+                        params.fading8[u_id, bs_id] = np.random.normal(0, 8)
+                    pl = max(los_pl, nlos_pl) + rain_attenuation(frequency, 10, params.rain) + params.fading8[
+                        u_id, bs_id]
+                elif distance_2d <= 5000:
+                    nlos_pl = 161.04 - 7.1 * np.log10(avg_street_width) + 7.5 * np.log10(avg_building_height) \
+                              - (24.37 - 3.7 * (avg_building_height / max(1, bs_height)) ** 2) * np.log10(
+                        bs_height) + (43.42 - 3.1 * np.log10(bs_height)) * (np.log10(distance_3d) - 3) \
+                              + 20 * np.log10(frequency / 1e9) - (3.2 * np.log10(11.75 * ue_height) - 4.97)
+
+                    los_pl = pathloss_urban_los(distance_2d, distance_3d, frequency, ue_height, bs_height, 28, 22, 9)
+                    if params.fading8[u_id, bs_id] == 0:
+                        params.fading8[u_id, bs_id] = np.random.normal(0, 8)
+                    pl = max(los_pl, nlos_pl) + rain + params.fading8[u_id, bs_id]
+                else:
+                    # TODO: Look at this - what happens if RMA > 10 km?
+                    nlos_pl = 161.04 - 7.1 * np.log10(avg_street_width) + 7.5 * np.log10(avg_building_height) \
+                              - (24.37 - 3.7 * (avg_building_height / max(1, bs_height)) ** 2) * np.log10(
+                        bs_height) + (43.42 - 3.1 * np.log10(bs_height)) * (np.log10(distance_3d) - 3) \
+                              + 20 * np.log10(frequency) - (3.2 * np.log10(11.75 * ue_height) - 4.97)
+
+                    # los_pl = pathloss(params, u_id, bs_id, util.AreaType.UMA, distance_2d, distance_3d, frequency,
+                                      # bs_height, ue_height=settings.UE_HEIGHT)
+
+                    los_pl = pathloss_urban_los(distance_2d, distance_3d, frequency, ue_height,
+                                                bs_height, 28, 22, 9) #TODO check whether this is correctc
+
+                    if params.fading8[u_id, bs_id] == 0:
+                        params.fading8[u_id, bs_id] = np.random.normal(0, 8)
+                    pl = max(los_pl, nlos_pl) + rain + params.fading8[u_id, bs_id]
         else:
-            pl_nlos = pathloss_urban_nlos(distance_3d, frequency, ue_height,
-                                          22.4, 35.3, 21.3, 0.3)
-            return max(pl_los, pl_nlos) + atmospheric_attenuation(frequency, distance_2d)
-    elif area_type == util.AreaType.RMA:
-        if los:
-            bp = max(1, breakpoint_distance(frequency, bs_height))
-            if distance_2d < 10:
-                return settings.MCL
-            elif distance_2d <= bp:
-                return pathloss_rma_los_pl1(distance_3d, avg_building_height, frequency) + \
-                       atmospheric_attenuation(frequency, distance_2d)
-            elif distance_2d <= 10000:
-                pl1 = pathloss_rma_los_pl1(bp, avg_building_height, frequency)
-                return pl1 + 40 * np.log10(distance_3d / bp) + atmospheric_attenuation(frequency,
-                                                                                       distance_2d)
-            else:  # TODO This is not correct yet
-                pl1 = pathloss_rma_los_pl1(bp, avg_building_height, frequency)
-                return pl1 + 40 * np.log10(distance_3d / bp) + atmospheric_attenuation(frequency,
-                                                                                       distance_2d)
-        else:  # NLoS
-            if distance_2d < 10:
-                return settings.MCL
-            elif distance_2d <= 5000:
-                nlos_pl = 161.04 - 7.1 * np.log10(avg_street_width) + 7.5 * np.log10(avg_building_height) \
-                          - (24.37 - 3.7 * (avg_building_height / max(1, bs_height)) ** 2) * np.log10(
-                    bs_height) \
-                          + (43.42 - 3.1 * np.log10(bs_height)) * (np.log10(distance_3d) - 3) \
-                          + 20 * np.log10(frequency / 1e9) - (3.2 * np.log10(11.75 * ue_height) - 4.97)
+            raise ValueError("Unknown area type")
+        if save:
+            params.path_loss[frequency][u_id, bs_id] = pl
+        return pl, params
 
-                los_pl = pathloss_interf(params, u_id, bs_id, util.AreaType.UMA, distance_2d, distance_3d, frequency,
-                                  bs_height,
-                                  ue_height=settings.UE_HEIGHT)  # todo THIS IS WRONG!
-                return max(los_pl, nlos_pl) + atmospheric_attenuation(frequency,
-                                                                      distance_2d)
-            else:  # TODO This is not correct
-                nlos_pl = 161.04 - 7.1 * np.log10(avg_street_width) + 7.5 * np.log10(avg_building_height) \
-                          - (24.37 - 3.7 * (avg_building_height / max(1, bs_height)) ** 2) * np.log10(
-                    bs_height) \
-                          + (43.42 - 3.1 * np.log10(bs_height)) * (np.log10(distance_3d) - 3) \
-                          + 20 * np.log10(frequency) - (3.2 * np.log10(11.75 * ue_height) - 4.97)
-
-                los_pl = pathloss(params, u_id, bs_id, util.AreaType.UMA, distance_2d, distance_3d, frequency,
-                                  bs_height,
-                                  ue_height=settings.UE_HEIGHT)  # todo THIS IS WRONG!
-                return max(los_pl, nlos_pl) + atmospheric_attenuation(frequency,
-                                                                      distance_2d)
-    else:
-        return math.inf
-
-        # raise ValueError("Unknown area type")
 
 def pathloss_rma_los_pl1(distance, avg_building_height, frequency):
     freq = frequency / 1e9
@@ -176,13 +146,13 @@ def pathloss_urban_los(d_2d, d_3d, freq, ue_height, bs_height, a, b, c):
     breakpoint = breakpoint_distance(freq, bs_height, ue_height, type='urban')
 
     if d_2d < 10:
-        return settings.MCL
+        return a + b * np.log10(util.distance_3d(bs_height, ue_height, d2d=10)) + 20 * np.log10(freq / 1e9)
     elif d_2d <= breakpoint:
         return a + b * np.log10(d_3d) + 20 * np.log10(freq / 1e9)
     elif d_2d <= 5000:
         return a + 40 * np.log10(d_3d) + 20 * np.log10(freq / 1e9) \
                - c * np.log10(breakpoint ** 2 + (bs_height - ue_height) ** 2)
-    else:  # TODO this is not correct
+    else:
         return a + 40 * np.log10(d_3d) + 20 * np.log10(freq / 1e9) \
                - c * np.log10(breakpoint ** 2 + (bs_height - ue_height) ** 2)
 
@@ -200,9 +170,20 @@ def breakpoint_distance(frequency, bs_height, ue_height=settings.UE_HEIGHT, type
         return 2 * math.pi * bs_height * ue_height * frequency / c
 
 
-# TODO
-def atmospheric_attenuation(frequency, distance):
-    return 0.0
+def rain_attenuation(frequency, distance, rain):
+    if rain:
+        if 1e9 < frequency < 20e9:
+            frequency = frequency / 1e9
+            logfreq = np.log(frequency)
+            kH = 3.8794e-5 * frequency ** (
+                    2.7474 - 1.794 * logfreq + 1.1805 * logfreq ** 2 - 0.2022 * logfreq ** 3)  # TODO: I assume only horizontal attenuation
+            alphaH = ((1.0564 * logfreq - 1.9256) ** 2 + 0.9437) / ((1.1141 * logfreq - 2.0940) ** 2 + 0.7181)
+            gamma = kH * rain ** alphaH
+            return gamma * distance / 1e3  # gamma is in dB/km
+        else:
+            return 0.0  # TODO: no expression given for frequencies above 20GHz as it is not in the dataset (yet)
+    else:
+        return 0.0
 
 
 def los_probability(d_2d, area, ue_h=settings.UE_HEIGHT):
