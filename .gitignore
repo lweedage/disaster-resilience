@@ -1,0 +1,12 @@
+
+.idea
+data/BSs
+data/users
+Figures
+venv
+__pycache__
+objects/__pycache__
+data/BSfailures
+data/Realisations
+converted_data
+data/Regions
