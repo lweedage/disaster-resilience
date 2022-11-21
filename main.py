@@ -15,6 +15,10 @@ provinces = ['Drenthe', 'Flevoland', 'Friesland', 'Groningen', 'Limburg', 'Overi
 municipalities = ['Middelburg', 'Maastricht', 'Groningen', 'Enschede', 'Emmen', 'Elburg',
                   'Eindhoven', "'s-Gravenhage", 'Amsterdam', 'Almere']
 
+provinces = ['Drenthe']
+MNOS = [['KPN'], ['T-Mobile'], ['Vodafone'], ['KPN', 'Vodafone', 'T-Mobile']]
+MNOS = [['KPN']]
+
 radius_disaster = 0  # 0, or a value if there is a disaster in the center of the region with radius
 random_failure = 0  # BSs randomly fail with this probability
 user_increase = 0  # an increase in number of users
@@ -32,7 +36,7 @@ for user_increase in [0]:
         fig, ax = plt.subplots()
         j = 0
         extraticks = [0, 0.4, 0.6, 0.8, 1.0]
-        for mno in [['KPN'], ['T-Mobile'], ['Vodafone'], ['KPN', 'Vodafone', 'T-Mobile']]:
+        for mno in MNOS:
             data = []
             fdp, fsp, sat = [], [], []
             for iteration in range(max_iterations):

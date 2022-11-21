@@ -4,6 +4,12 @@ from owslib.wfs import WebFeatureService
 from shapely.geometry import Polygon, MultiPolygon
 import csv
 
+def find_scenario(stedelijkheid):
+    if stedelijkheid in [1, 2, 3]:
+        return 'UMA'
+    else:
+        return 'RMA'
+
 pd.set_option('display.max_rows', None)
 pd.set_option('display.max_columns', None)
 
@@ -76,5 +82,6 @@ zip_codes = gpd.GeoDataFrame(pd.concat([zip_codes, new_df], ignore_index=True))
 
 zip_codes['popdensity'] = zip_codes['aantal_inwoners'] / zip_codes['geometry'].area  # add population density: number of people divided by area
 zip_codes['municipality'] = [zip_code_to_municipality[str(p)] for p in zip_codes['postcode']]
+zip_codes['scenario'] = [find_scenario(int(stedelijkheid)) for stedelijkheid in zip_codes['stedelijkheid']]
 
 zip_codes.to_file("zip_codes.shp")

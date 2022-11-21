@@ -50,6 +50,12 @@ def find_zip_code_region(params):
 def load_bs(params):
     UMA = util.from_data('data/UMA.p')
     RMA = util.from_data('data/RMA.p')
+    if UMA is None:
+        UMA = unary_union(params.zip_codes[params.zip_codes['scenario'] == 'UMA'].geometry)
+        RMA = unary_union(params.zip_codes[params.zip_codes['scenario'] == 'RMA'].geometry)
+        print(UMA)
+        util.to_data(UMA, 'data/UMA.p')
+        util.to_data(RMA, 'data/RMA.p')
 
     all_basestations = util.from_data(f'data/BSs/{params.bsfilename}_all_basestations.p')
     xs = util.from_data(f'data/BSs/{params.bsfilename}_xs.p')
@@ -71,7 +77,6 @@ def load_bs(params):
         xs, ys = [], []
         radios = []
         all_freqs = set()
-        channel_count = 0
         omnidirection = 0
 
         with open(BS_PATH) as f:
@@ -85,7 +90,6 @@ def load_bs(params):
             for key, index in zip(bss.keys(), range(len(bss))):
                 bar.update(index)
 
-                # small_cell = False
                 bs = bss[key]
                 x = float(bs.get('x'))
                 y = float(bs.get('y'))
@@ -127,9 +131,9 @@ def load_bs(params):
                                     omnidirection += 1
 
                         if channel > 0:
-                            if UMA.contains(Point(x, y)).bool():
+                            if UMA.contains(Point(x, y)):
                                 area_type = util.AreaType.UMA
-                            elif RMA.contains(Point(x, y)).bool():
+                            elif RMA.contains(Point(x, y)):
                                 area_type = util.AreaType.RMA
                             else:
                                 area_type = util.AreaType.RMA  # TODO: there are still some BSs that have no zip code? I assume this is RMA
