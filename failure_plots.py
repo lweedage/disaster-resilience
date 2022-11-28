@@ -19,7 +19,7 @@ pylab.rcParams.update(params)
 colors = ['#904C77', '#E49AB0', '#ECB8A5', '#96ACB7', '#957D95'] * 100
 markers = ['o', 'X', 'v', 's', '*', 'P', '1', '+']
 #
-max_iterations = 5
+max_iterations = 100
 percentage = 2
 percentage_MNO = {'Vodafone': 0.33, 'KPN': 0.33, 'T-Mobile': 0.33, 'all_MNOs': 1}
 
@@ -36,15 +36,13 @@ MNOs = ['KPN', 'T-Mobile', 'Vodafone', 'all_MNOs']
 name_MNO = ['MNO-1', 'MNO-2', 'MNO-3', 'National roaming']
 #
 
-Disaster = False
+Disaster = True
 Random = False
 User = False
 
-radii = [0, 500, 1000, 2500, 5000] #, 2500]
+radii = [0, 500, 1000, 2500]
 increases = [0, 50, 100, 200]
 random = [0, 0.05, 0.1, 0.25, 0.5]
-
-province = 'Drenthe'
 
 def find_name(filename, radius):
     if MNO != 'all_MNOs':
@@ -75,32 +73,25 @@ elif Random:
 else:
     measures = [0]
 
-MNO = 'all_MNOs'
+MNOs = ['KPN', 'T-Mobile', 'Vodafone', 'all_MNOs']
 municipalities = ['Enschede']
 
-for FDPFSP in ['FDP', 'FSP']:
-    fig, ax = plt.subplots()
-    for x in range(len(municipalities)):
-        if FDPFSP == 'FDP':
-            plt.plot([-0.001, 0.1], [x, x], ':', color='gray', zorder=1)
-        elif FDPFSP == 'FSP':
-            plt.plot([0.1, 1], [x, x], ':', color='gray', zorder=1)
-
-    for i, measure in zip(range(len(measures)), measures):
+for MNO in MNOs:
+    for FDPFSP in ['FDP', 'FSP']:
         data = []
-        for municipality in municipalities:
-            filename = f'{municipality}{MNO}'
-            filename = find_name(filename, measure)
-            if FDPFSP == 'FDP':
-                fdpfsp = util.from_data(f'data/Realisations/{filename}_totalfdp.p')
-            else:
-                fdpfsp = util.from_data(f'data/Realisations/{filename}_totalfsp.p')
+        for i, measure in zip(range(len(measures)), measures):
+            for municipality in municipalities:
+                filename = f'{municipality}{MNO}'
+                filename = find_name(filename, measure)
+                if FDPFSP == 'FDP':
+                    fdpfsp = util.from_data(f'data/Realisations/{filename}_totalfdp.p')
+                else:
+                    fdpfsp = util.from_data(f'data/Realisations/{filename}_totalfsp.p')
 
-            print(FDPFSP, sum(fdpfsp)/len(fdpfsp))
+                data.append(sum(fdpfsp)/len(fdpfsp))
 
-            print(f'data/Realisations/{find_name(MNO, measure)}_totalfsp.p')
-            data.append(sum(fdpfsp)/len(fdpfsp))
-
+        print(MNO, FDPFSP, data)
+print(measures)
 #
 #         if Disaster:
 #             label = str('$r_{fail} =$' + str(measure))

@@ -9,6 +9,10 @@ import warnings
 import statsmodels.api as sm
 import matplotlib.pylab as pylab
 import util
+import numpy as np
+import seaborn as sns
+import pandas as pd
+from shapely.ops import unary_union
 
 
 params = {'legend.fontsize': 'x-large',
@@ -24,17 +28,18 @@ markers = ['o', 'X', 'v', 's', '*', 'P', '1', '+']
 
 warnings.filterwarnings("ignore", category=ShapelyDeprecationWarning)
 
-municipalities = ['Enschede', 'Amsterdam']
+municipalities = ['Enschede']
 name_MNOs = ['MNO-1', 'MNO-2', 'MNO-3', 'National roaming']
+MNOs = [['KPN'], ['T-Mobile'], ['Vodafone'], ['KPN', 'Vodafone', 'T-Mobile']]
 i = 0
 minimum = 100
-random_failure = 0.5
-radius_disaster = 0
+random_failure = 0
+radius_disaster = 1000
 
 for municipality in municipalities:
     i = 0
     fig, ax = plt.subplots()
-    for mno in [['KPN'], ['T-Mobile'], ['Vodafone'], ['Vodafone', 'KPN', 'T-Mobile']]:
+    for mno in MNOs:
         print(municipality, mno[0])
         # Retrieve zip code population + area data and make a region with specified zip codes
         # Columns are: aantal_inw (population), stedelijkh (urbanity), postcode (zip code), geometry,
@@ -49,7 +54,7 @@ for municipality in municipalities:
         percentage = 2
         seed = 1
 
-        delta = 50
+        delta = 100
         params = p.Parameters(seed, zip_codes, mno, percentage, buffer_size=2000, city_list=cities, province=province, delta=delta, radius_disaster=radius_disaster, random_failure=random_failure)
 
         params = antenna.find_zip_code_region(params)
@@ -63,9 +68,26 @@ for municipality in municipalities:
 
         sinrs = models.find_links_heatmap(params)
 
-        data = list(sinrs)
-        minimum = min(min(sinrs), minimum)
+        # [xmin, ymin, xmax, ymax] = gpd.GeoSeries(params.zip_code_region['geometry']).total_bounds
+        # xmin, xmax = np.floor(xmin), np.ceil(xmax)
+        # ymin, ymax = np.floor(ymin), np.ceil(ymax)
+        # xdelta, ydelta = int(xmax - xmin), int(ymax - ymin)
+        #
+        # fig, ax = plt.subplots()
+        # data1 = pd.DataFrame(data={'x': params.y_user, 'y': params.x_user, 'z': sinrs})
+        # data = data1.pivot(index='x', columns='y', values='z')
+        # hm = sns.heatmap(data, cmap='magma_r', ax=ax, vmin = 0, vmax = 80)
+        # # circle1 = plt.Circle(((xmax + xmin)/2, (ymax + ymin)/2), 2500, color='r')
+        # # print(circle1)
+        # # ax.add_patch(circle1)
+        # ax.scatter(np.divide(np.subtract(params.xbs, xmin), delta), np.divide(np.subtract(params.ybs, ymin), delta),
+        #            s=5, color='g')
+        # plt.xticks([])
+        # plt.yticks([])
+        # plt.savefig(f'Figures/heatmap{params.filename}.png', dpi=400)
+        # plt.show()
 
+        data = list(sinrs)
         ecdf = sm.distributions.ECDF(data)
         plt.step(ecdf.x, ecdf.y, label = name_MNOs[i], color = util.get_color(i), alpha = 0.8)
 
@@ -75,7 +97,7 @@ for municipality in municipalities:
         First = True
         for j in range(len(ecdf.x)):
             if ecdf.x[j] > 5 and First:
-                print(ecdf.y[j])
+                print(ecdf.y[j]*100)
                 First = False
             if ecdf.y[j] > .25 and First25:
                 points.append(ecdf.x[j])
@@ -92,11 +114,10 @@ for municipality in municipalities:
 
     plt.legend()
 
+    plt.xlim((-10, 100))
     plt.xticks(list(plt.xticks()[0]) + [5])
-    if minimum == -100:
-        plt.xlim((-10, 100))
     plt.xlabel('SINR (dB)')
     plt.ylabel('ECDF')
     plt.vlines(5, 0, 1, color = 'gray', linestyles='dashed')
-    plt.savefig(f'Figures/sinr_distribution{params.filename}.png', dpi=1000)
+    plt.savefig(f'Figures/sinr_distribution{params.filename}.pdf', dpi=1000)
     plt.show()

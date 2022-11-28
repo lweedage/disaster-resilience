@@ -15,9 +15,8 @@ provinces = ['Drenthe', 'Flevoland', 'Friesland', 'Groningen', 'Limburg', 'Overi
 municipalities = ['Middelburg', 'Maastricht', 'Groningen', 'Enschede', 'Emmen', 'Elburg',
                   'Eindhoven', "'s-Gravenhage", 'Amsterdam', 'Almere']
 
-provinces = ['Drenthe']
 MNOS = [['KPN'], ['T-Mobile'], ['Vodafone'], ['KPN', 'Vodafone', 'T-Mobile']]
-MNOS = [['KPN']]
+MNOS = [['KPN', 'Vodafone', 'T-Mobile']]
 
 radius_disaster = 0  # 0, or a value if there is a disaster in the center of the region with radius
 random_failure = 0  # BSs randomly fail with this probability
@@ -32,7 +31,7 @@ max_iterations = 100
 zip_codes = gpd.read_file('data/square_statistics.shp')
 for user_increase in [0]:
     for province in provinces:
-        # for municipality in municipalities:
+    # for municipality in municipalities:
         fig, ax = plt.subplots()
         j = 0
         extraticks = [0, 0.4, 0.6, 0.8, 1.0]
@@ -64,20 +63,16 @@ for user_increase in [0]:
                 params = antenna.load_bs(params)
                 # FINDING LINKS
                 links, link_channel, snr, sinr, capacity, FDP, FSP, interference_loss = models.find_links(params)
-
                 # print(interference_loss)
                 # print('average loss: ', sum(interference_loss)/len(interference_loss))
-
                 for i in capacity:
                     data.append(i)
-
                 fraction_satisified_pop = sum(FSP) / params.number_of_users
                 fraction_disconnected_pop = sum(FDP) / params.number_of_users
                 print(f'There are {params.number_of_bs} BSs and {params.number_of_users} users.')
 
                 print(f'FDP = {fraction_disconnected_pop}')
                 print(f'FSP = {fraction_satisified_pop}')
-
                 fdp.append(fraction_disconnected_pop)
                 fsp.append(fraction_satisified_pop)
             #

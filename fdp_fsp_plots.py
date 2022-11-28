@@ -33,7 +33,7 @@ MNOs = ['KPN', 'T-Mobile', 'Vodafone', 'all_MNOs']
 name_MNO = ['MNO-1', 'MNO-2', 'MNO-3', 'National roaming']
 #
 
-Disaster = True
+Disaster = False
 Random = False
 User = False
 
@@ -81,6 +81,7 @@ for measure in measures:
             filename = f'{MNO}'
             filename = find_name(filename, measure)
             df = gpd.read_file(f'converted_data/{filename}_provinces.shp')
+            print(min(list(reversed(df[FDPFSP].astype('float')))), max(list(reversed(df[FDPFSP].astype('float')))), MNO)
             plt.scatter(list(reversed(df[FDPFSP].astype('float'))), range(len(provinces)), label=name_MNO[i],
                         color=util.get_color(i), alpha=0.5, marker=markers[i])
         plt.xlabel(FDPFSP)
@@ -100,13 +101,13 @@ for measure in measures:
         ax.spines['top'].set_visible(False)
         ax.spines['left'].set_visible(False)
         ax.spines['bottom'].set_visible(False)
-        for pos in ['right', 'top', 'left', 'bottom']:
-            ax.spines[pos].set_color('white')
-        ax.xaxis.label.set_color('white')
-        ax.yaxis.label.set_color('white')
-        ax.tick_params(colors='white')
+        # for pos in ['right', 'top', 'left', 'bottom']:
+        #     ax.spines[pos].set_color('white')
+        # ax.xaxis.label.set_color('white')
+        # ax.yaxis.label.set_color('white')
+        # ax.tick_params(colors='white')
 
-        plt.savefig(f'Figures/{FDPFSP}provinces.png', dpi=1000, transparent=True)
+        plt.savefig(f'Figures/{FDPFSP}provinces.pdf', dpi=1000, transparent=True)
         plt.show()
 
         fig, ax = plt.subplots()
@@ -114,11 +115,12 @@ for measure in measures:
             if FDPFSP == 'FDP':
                 plt.plot([-0.001, 0.3], [x, x], ':', color='gray', alpha = 0.5, zorder=1)
             elif FDPFSP == 'FSP':
-                plt.plot([0.3, 1.01], [x, x], ':', color='gray', alpha = 0.5, zorder=1)
+                plt.plot([0.25, 1.01], [x, x], ':', color='gray', alpha = 0.5, zorder=1)
 
         for i, MNO in zip(range(len(MNOs)), MNOs):
             filename = f'{MNO}'
             filename = find_name(filename, measure)
+            print(filename)
             df = util.from_data(f'converted_data/{filename}_municipalities.p')
             df = df[df['area'].isin(municipalities)]
             plt.scatter(list(df[FDPFSP].astype('float')), range(len(municipalities)), label=name_MNO[i],
@@ -139,13 +141,13 @@ for measure in measures:
         ax.spines['top'].set_visible(False)
         ax.spines['left'].set_visible(False)
         ax.spines['bottom'].set_visible(False)
-        for pos in ['right', 'top', 'left', 'bottom']:
-            ax.spines[pos].set_color('white')
-        ax.xaxis.label.set_color('white')
-        ax.yaxis.label.set_color('white')
-        ax.tick_params(colors='white')
+        # for pos in ['right', 'top', 'left', 'bottom']:
+        #     ax.spines[pos].set_color('white')
+        # ax.xaxis.label.set_color('white')
+        # ax.yaxis.label.set_color('white')
+        # ax.tick_params(colors='white')
 
-        plt.savefig(f'Figures/{FDPFSP}municipalities.png', dpi=1000, transparent=True)
+        plt.savefig(f'Figures/{FDPFSP}municipalities.pdf', dpi=1000, transparent=True)
         plt.show()
 
     dataFDP, dataFSP = [], []
@@ -167,6 +169,8 @@ for measure in measures:
     fig, ax = plt.subplots()
     fdplot = ax.boxplot(dataFDP, positions=x - 0.17, widths=0.3, patch_artist=True, showfliers=False)
     fsplot = ax.boxplot(dataFSP, positions=x + 0.17, widths=0.3, patch_artist=True, showfliers=False)
+    print([min(lijst) for lijst in dataFSP])
+    print([max(lijst) for lijst in dataFSP])
 
     for patch in fdplot['boxes']:
         patch.set_facecolor((0.2549019607843137, 0.4117647058823529, 0.8823529411764706, 0.5))
@@ -177,7 +181,7 @@ for measure in measures:
     plt.xticks(x, name_MNO[:-1])
     # plt.yticks([0.0, 0.25, 0.50, 0.75, 1.0])
     plt.ylabel('Difference with national roaming')
-    plt.savefig('Figures/municipality_difference.png', dpi=1000)
+    plt.savefig('Figures/municipality_difference.pdf', dpi=1000)
     plt.show()
 
     dataFDP, dataFSP = [], []
@@ -211,5 +215,5 @@ for measure in measures:
     plt.xticks(x, name_MNO[:-1])
     # plt.yticks([0.0, 0.25, 0.50, 0.75, 1.0])
     plt.ylabel('Difference with national roaming')
-    plt.savefig('Figures/province_difference.png', dpi=1000)
+    plt.savefig('Figures/province_difference.pdf', dpi=1000)
     plt.show()

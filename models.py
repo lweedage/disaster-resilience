@@ -171,7 +171,8 @@ def find_links(p):
     channel_link = util.from_data(f'data/Realisations/{p.filename}{p.seed}_channel_link.p')
     interf_loss = util.from_data(f'data/Realisations/{p.filename}{p.seed}_interference_loss.p')
 
-    if interf_loss is None:
+    # interf_loss = None
+    if FDP is None:
         links = lil_matrix((p.number_of_users, p.number_of_bs))
         snrs = lil_matrix((p.number_of_users, p.number_of_bs))
         sinrs = lil_matrix((p.number_of_users, p.number_of_bs))
@@ -209,7 +210,6 @@ def find_links(p):
                                 best_measure = SINR / max(len(channel.users), 1)
             if best_SINR >= settings.MINIMUM_SNR:
                 interf_loss[user.id] = SNR - best_SINR
-
                 sinrs[user.id, best_bs] = best_SINR
                 channel_link[user.id, best_bs] = channel_id
                 for c in p.BaseStations[best_bs].channels:
@@ -242,11 +242,11 @@ def find_links(p):
         if p.seed == 1:
             util.to_data(links, f'data/Realisations/{p.filename}{p.seed}_links.p')
             util.to_data(snrs, f'data/Realisations/{p.filename}{p.seed}_snrs.p')
-            util.to_data(sinrs, f'data/Realisations/{p.filename}{p.seed}_sinrs.p')
+        util.to_data(sinrs, f'data/Realisations/{p.filename}{p.seed}_sinrs.p')
         util.to_data(capacities, f'data/Realisations/{p.filename}{p.seed}_capacities.p')
         util.to_data(FDP, f'data/Realisations/{p.filename}{p.seed}_FDP.p')
         util.to_data(FSP, f'data/Realisations/{p.filename}{p.seed}_FSP.p')
-        util.to_data(FSP, f'data/Realisations/{p.filename}{p.seed}_interference_loss.p')
+        util.to_data(interf_loss, f'data/Realisations/{p.filename}{p.seed}_interference_loss.p')
 
     return links, channel_link, snrs, sinrs, capacities, FDP, FSP, interf_loss
 
