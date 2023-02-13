@@ -30,7 +30,7 @@ def find_zip_code_region(params):
     zip_code_region_data = util.from_data(f'data/BSs/{params.filename_noMNO}_zip_code_region_data.p')
     region = util.from_data(f'data/BSs/{params.filename_noMNO}_region.p')
     zip_codes = params.zip_codes
-    zip_code_region_data = None
+    # zip_code_region_data = None
     if zip_code_region_data is None:
         if isinstance(params.cities[0], int):
             zip_code_region_data = zip_codes[zip_codes['postcode'].isin(params.cities)]
@@ -53,7 +53,7 @@ def load_bs(params):
     if UMA is None:
         UMA = unary_union(params.zip_codes[params.zip_codes['scenario'] == 'UMA'].geometry)
         RMA = unary_union(params.zip_codes[params.zip_codes['scenario'] == 'RMA'].geometry)
-        print(UMA)
+
         util.to_data(UMA, 'data/UMA.p')
         util.to_data(RMA, 'data/RMA.p')
 
@@ -69,7 +69,7 @@ def load_bs(params):
     else:
         new_region = params.region
 
-    # radios = None
+    radios = None
     if radios is None:
         print('BSs are not stored in memory')
         all_basestations = list()
@@ -115,6 +115,7 @@ def load_bs(params):
                             antenna = bs.get("antennas").get(key)
                             frequency = antenna.get("frequency")
                             provider, bandwidth = util.find_provider(frequency / 1e6)
+                            new_bs.provider = provider
                             if provider in params.providers:
                                 all_freqs.add(frequency)
                                 main_direction = antenna.get('angle')

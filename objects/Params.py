@@ -7,7 +7,12 @@ import util as util
 class Parameters:
     def __init__(self, seed, zip_codes, provider_list, percentage, buffer_size, city_list=None, province=None,
                  delta=None, radius_disaster=0, random_failure=0, user_increase=0, capacity_distribution=False,
-                 geographic_failure=False):
+                 geographic_failure=False, back_up = False):
+
+        self.back_up = back_up
+        if back_up:
+            provider_list = ['KPN', 'T-Mobile', 'Vodafone']
+
         self.zip_codes = zip_codes
         self.number_of_bs = int()
         self.number_of_users = int()
@@ -15,6 +20,7 @@ class Parameters:
         self.percentage = percentage
         self.providers = provider_list
         self.seed = seed
+        self.percentage = percentage
 
         self.region = None
         self.zip_code_region = None
@@ -35,14 +41,11 @@ class Parameters:
             self.cities = city_list
             self.city_name = city_list[0]
 
+        self.percentages = {'KPN': 0.4, 'T-Mobile': 0.4, 'Vodafone': 0.2}
+
         if len(provider_list) == 1:
             provider = provider_list[0]
-            if provider == 'KPN':
-                percentage_MNO = 1 / 3
-            elif provider == 'T-Mobile':
-                percentage_MNO = 1 / 3
-            else:
-                percentage_MNO = 1 / 3
+            percentage_MNO = self.percentages[provider]
 
         else:
             provider = 'all_MNOs'
@@ -78,6 +81,10 @@ class Parameters:
         if geographic_failure:
             self.filename += 'geographic_failure'
             self.bsfilename += 'geographic_failure'
+
+        if back_up:
+            self.filename += 'backup'
+            self.userfilename += 'backup'
 
         self.los_probabilities = None
         self.fading4 = None

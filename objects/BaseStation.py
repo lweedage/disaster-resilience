@@ -49,7 +49,7 @@ class BaseStation:
 
 
 class Channel:
-    def __init__(self, id, BS_id, height, frequency, power, main_direction, bandwidth, beamwidth=360):
+    def __init__(self, id, BS_id, height, frequency, power, main_direction, bandwidth,  beamwidth=360):
         self.id = id
         self.BS_id = BS_id
         self.height = height

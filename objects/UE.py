@@ -8,6 +8,7 @@ class UserEquipment:
         self.y = y
         self.height = settings.UE_HEIGHT
         self.rate_requirement = rate_requirement
+        self.provider = ''
 
     def __str__(self):
         return "UE[{}], requested capacity: {}, x: {}, y: {}".format(self.id, self.rate_requirement, self.x, self.y)

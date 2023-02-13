@@ -6,8 +6,13 @@ import seaborn as sns
 import math
 
 # code from Bart Meyers
-
-colors = sns.color_palette("Paired", n_colors=100)
+colors = ['red', 'dodgerblue', 'blueviolet', 'mediumseagreen', 'deeppink', 'coral', 'royalblue', 'midnightblue',
+          'yellowgreen', 'darkgreen', 'mediumblue', 'DarkOrange', 'green', 'MediumVioletRed',
+          'darkcyan', 'orangered', 'purple', 'cornflowerblue', 'saddlebrown', 'indianred', 'fuchsia', 'DarkViolet',
+          'salmon', 'sandybrown', 'seagreen', 'seashell', 'sienna', 'silver', 'skyblue', 'slateblue',
+          'slategray', 'snow', 'springgreen', 'steelblue', 'tan', 'teal', 'thistle', 'black', 'grey',
+          'tomato', 'turquoise', 'violet', 'wheat', 'whitesmoke', 'yellow']* 100
+# colors = sns.color_palette("Paired", n_colors=100)
 
 pd.set_option('display.max_columns', None)
 pd.set_option('display.max_rows', None)

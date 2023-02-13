@@ -19,7 +19,7 @@ markers = ['o', 'X', 'v', 's', '*', 'P', '1', '+']
 #
 max_iterations = 5
 percentage = 2
-percentage_MNO = {'Vodafone': 0.33, 'KPN': 0.33, 'T-Mobile': 0.33, 'all_MNOs': 1}
+percentage_MNO = {'Vodafone': 0.2, 'KPN': 0.33, 'T-Mobile': 0.33, 'all_MNOs': 1}
 
 #
 provinces = list(reversed(['Drenthe', 'Flevoland', 'Friesland', 'Gelderland', 'Groningen', 'Limburg', 'Noord-Brabant',
@@ -73,15 +73,16 @@ for measure in measures:
         fig, ax = plt.subplots()
         for x in range(len(provinces)):
             if FDPFSP == 'FDP':
-                plt.plot([-0.001, 0.25], [x, x], ':', color='gray', alpha = 0.5, zorder=1)
+                plt.plot([-0.001, 0.25], [x, x], ':', color='gray', alpha=0.5, zorder=1)
             elif FDPFSP == 'FSP':
-                plt.plot([0, 1.01], [x, x], ':', color='gray', alpha = 0.5, zorder=1)
+                plt.plot([0, 1.01], [x, x], ':', color='gray', alpha=0.5, zorder=1)
 
         for i, MNO in zip(range(len(MNOs)), MNOs):
             filename = f'{MNO}'
             filename = find_name(filename, measure)
             df = gpd.read_file(f'converted_data/{filename}_provinces.shp')
             print(min(list(reversed(df[FDPFSP].astype('float')))), max(list(reversed(df[FDPFSP].astype('float')))), MNO)
+            print(len(df[FDPFSP]), len(provinces))
             plt.scatter(list(reversed(df[FDPFSP].astype('float'))), range(len(provinces)), label=name_MNO[i],
                         color=util.get_color(i), alpha=0.5, marker=markers[i])
         plt.xlabel(FDPFSP)
@@ -113,9 +114,9 @@ for measure in measures:
         fig, ax = plt.subplots()
         for x in range(len(municipalities)):
             if FDPFSP == 'FDP':
-                plt.plot([-0.001, 0.3], [x, x], ':', color='gray', alpha = 0.5, zorder=1)
+                plt.plot([-0.001, 0.3], [x, x], ':', color='gray', alpha=0.5, zorder=1)
             elif FDPFSP == 'FSP':
-                plt.plot([0.25, 1.01], [x, x], ':', color='gray', alpha = 0.5, zorder=1)
+                plt.plot([0.25, 1.01], [x, x], ':', color='gray', alpha=0.5, zorder=1)
 
         for i, MNO in zip(range(len(MNOs)), MNOs):
             filename = f'{MNO}'
@@ -153,6 +154,10 @@ for measure in measures:
     dataFDP, dataFSP = [], []
     filename = find_name('all_MNOs', measure)
     df = util.from_data(f'converted_data/{filename}_municipalities.p')
+    df = df[df['area'].isin(municipalities)]
+    print(df)
+    df = df.set_index('area')
+
     nationalroaming_FDP = df['FDP'].astype('float')
     nationalroaming_FSP = df['FSP'].astype('float')
 
@@ -160,17 +165,20 @@ for measure in measures:
         filename = f'{MNO}'
         filename = find_name(filename, measure)
         df = util.from_data(f'converted_data/{filename}_municipalities.p')
-
+        df = df[df['area'].isin(municipalities)]
+        df = df.set_index('area')
+        print(df)
         dataFDP.append(df['FDP'].astype('float') - nationalroaming_FDP)
         dataFSP.append(nationalroaming_FSP - df['FSP'].astype('float'))
+
+    print([min(i) for i in dataFDP], [max(i) for i in dataFDP])
+    print([min(i) for i in dataFSP], [max(i) for i in dataFSP])
 
     x = np.array([1, 2, 3])
 
     fig, ax = plt.subplots()
     fdplot = ax.boxplot(dataFDP, positions=x - 0.17, widths=0.3, patch_artist=True, showfliers=False)
     fsplot = ax.boxplot(dataFSP, positions=x + 0.17, widths=0.3, patch_artist=True, showfliers=False)
-    print([min(lijst) for lijst in dataFSP])
-    print([max(lijst) for lijst in dataFSP])
 
     for patch in fdplot['boxes']:
         patch.set_facecolor((0.2549019607843137, 0.4117647058823529, 0.8823529411764706, 0.5))

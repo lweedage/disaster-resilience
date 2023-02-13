@@ -1,18 +1,13 @@
-import csv
 import pickle
 import matplotlib.pyplot as plt
-import pandas as pd
-import shapely.geometry
-from shapely.geometry import MultiPolygon
-from shapely.ops import transform
-import scipy
 import geopandas as gpd
-import pyproj
-from shapely.ops import unary_union
-from shapely.geometry import Point
-import matplotlib
-import numpy as np
+import pandas as pd
 import pylab
+import pyproj
+from shapely.geometry import Point
+from shapely.ops import transform
+from shapely.ops import unary_union
+import numpy as np
 
 # matplotlib.use('TkAgg')
 
@@ -42,103 +37,110 @@ random_p = 0.5  # 0.05, 0.1, 0.25, 0.5
 
 mnos = ['KPN', 'T-Mobile', 'Vodafone', 'all_MNOs']
 providers = ['MNO-1', 'MNO-2', 'MNO-3', 'National roaming']
-mnos = ['all_MNOs']
+# mnos = ['Vodafone']
 
-
+# municipalities = ['Middelburg', 'Maastricht', 'Groningen', 'Enschede', 'Emmen', 'Elburg',
+#                   'Eindhoven', "'s-Gravenhage", 'Amsterdam', 'Almere']
 areas = ['Drenthe', 'Flevoland', 'Friesland', 'Gelderland', 'Groningen', 'Limburg', 'Noord-Brabant', 'Noord-Holland',
          'Overijssel', 'Utrecht', 'Zeeland', 'Zuid-Holland']
 provinces = ['Drenthe', 'Flevoland', 'Friesland', 'Gelderland', 'Groningen', 'Limburg', 'Noord-Brabant',
              'Noord-Holland', 'Overijssel', 'Utrecht', 'Zeeland', 'Zuid-Holland']
 
+areas = ['Drenthe']
+
 # areas = ['Noord-Holland']
-# provinces = areas
+provinces = areas
 
 data_figureFSP = dict()
 data_figureFDP = dict()
-# for MNO in mnos:
-#     df = gpd.GeoDataFrame(columns=['area', 'FSP', 'FDP'])
-#     df['area'] = areas
-#     geom = []
-#     for area in areas:
-#         print(area)
-#         region = pickle.load(open(f'data/Regions/{area}region.p', 'rb'))
-#         region = region.geometry.values
-#         region = transform(transformer.transform, region[0])
-#         geom.append(region)
-#
-#         if MNO == 'all_MNOs':
-#             share = 1
-#         else:
-#             share = 0.33
-#
-#         # --- add FSP and FDP ---
-#         filename = f'{area}{MNO}{percentage}{share}'
-#         if disaster:
-#             filename += 'disaster' + str(radius_disaster)
-#         elif user_increase:
-#             filename += 'user_increase' + str(percentage_increase)
-#         elif random_failure:
-#             filename += 'random' + str(random_p)
-#
-#         filename += str(max_iterations)
-#
-#         fsp = pickle.load(open(f'data/Realisations/{filename}_totalfsp.p', 'rb'))
-#         fdp = pickle.load(open(f'data/Realisations/{filename}_totalfdp.p', 'rb'))
-#
-#         print(max(fsp), max(fdp))
-#
-#         fsp = sum(fsp) / len(fsp)
-#         fdp = sum(fdp) / len(fdp)
-#
-#         condition = df['area'] == area
-#         df.loc[condition, 'FSP'] = fsp
-#         df.loc[condition, 'FDP'] = fdp
-#
-#     df = df.set_geometry(geom)
-#
-#     filename = f'{MNO}'
-#     if disaster:
-#         filename += 'disaster' + str(radius_disaster)
-#     elif user_increase:
-#         filename += 'user_increase' + str(percentage_increase)
-#     elif random_failure:
-#         filename += 'random' + str(random_p)
-#     df.to_file(f'converted_data/{filename}_provinces.shp')
-#     data_figureFSP[MNO] = df['FSP'].tolist()
-#     data_figureFDP[MNO] = df['FDP'].tolist()
-#
-# boxplot_data = data_figureFSP.values()
-#
-# fig, ax = plt.subplots()
-# bplot = plt.boxplot(boxplot_data, patch_artist=True, showfliers=False)
-# for patch, color in zip(bplot['boxes'], colors[:4]):
-#     patch.set_facecolor(color)
-# plt.xticks(np.arange(1, 5), providers)
-# plt.ylabel('FSP')
-# if disaster:
-#     plt.savefig(f'Figures/boxplotFSPprovincesdisaster{radius_disaster}.png', dpi=1000)
-# elif user_increase:
-#     plt.savefig(f'Figures/boxplotFSPprovincesuser_increase{percentage_increase}.png', dpi=1000)
-# elif random_failure:
-#     plt.savefig(f'Figures/boxplotFSPprovincesrandom{random_p}.png', dpi=1000)
-# else:
-#     plt.savefig(f'Figures/boxplotFSPprovinces.png', dpi=1000)
-# boxplot_data = data_figureFDP.values()
-#
-# fig, ax = plt.subplots()
-# bplot = plt.boxplot(boxplot_data, patch_artist=True, showfliers=False)
-# for patch, color in zip(bplot['boxes'], colors[:4]):
-#     patch.set_facecolor(color)
-# plt.xticks(np.arange(1, 5), providers)
-# plt.ylabel('FDP')
-# if disaster:
-#     plt.savefig(f'Figures/boxplotFDPprovincesdisaster{radius_disaster}.png', dpi=1000)
-# elif user_increase:
-#     plt.savefig(f'Figures/boxplotFDPprovincesuser_increase{percentage_increase}.png', dpi=1000)
-# elif random_failure:
-#     plt.savefig(f'Figures/boxplotFDPprovincesrandom{random_p}.png', dpi=1000)
-# else:
-#     plt.savefig(f'Figures/boxplotFDPprovinces.png', dpi=1000)
+
+
+for MNO in mnos:
+    df = gpd.GeoDataFrame(columns=['area', 'FSP', 'FDP'])
+    df['area'] = areas
+    geom = []
+    for area in areas:
+        print(area)
+        region = pickle.load(open(f'data/Regions/{area}region.p', 'rb'))
+        region = region.geometry.values
+        region = transform(transformer.transform, region[0])
+        geom.append(region)
+
+        if MNO == 'all_MNOs':
+            share = 1
+        # elif MNO == 'Vodafone':
+        #     share = 0.2
+        else:
+            share = 0.33
+
+        # --- add FSP and FDP ---
+        filename = f'{area}{MNO}{percentage}{share}'
+        if disaster:
+            filename += 'disaster' + str(radius_disaster)
+        elif user_increase:
+            filename += 'user_increase' + str(percentage_increase)
+        elif random_failure:
+            filename += 'random' + str(random_p)
+
+        filename += str(max_iterations)
+
+        fsp = pickle.load(open(f'data/Realisations/{filename}_totalfsp.p', 'rb'))
+        fdp = pickle.load(open(f'data/Realisations/{filename}_totalfdp.p', 'rb'))
+
+        print(max(fsp), max(fdp))
+
+        fsp = sum(fsp) / len(fsp)
+        fdp = sum(fdp) / len(fdp)
+
+        condition = df['area'] == area
+        df.loc[condition, 'FSP'] = fsp
+        df.loc[condition, 'FDP'] = fdp
+
+    df = df.set_geometry(geom)
+
+    filename = f'{MNO}'
+    if disaster:
+        filename += 'disaster' + str(radius_disaster)
+    elif user_increase:
+        filename += 'user_increase' + str(percentage_increase)
+    elif random_failure:
+        filename += 'random' + str(random_p)
+    df.to_file(f'converted_data/{filename}_provinces.shp')
+    data_figureFSP[MNO] = df['FSP'].tolist()
+    data_figureFDP[MNO] = df['FDP'].tolist()
+
+boxplot_data = data_figureFSP.values()
+
+fig, ax = plt.subplots()
+bplot = plt.boxplot(boxplot_data, patch_artist=True, showfliers=False)
+for patch, color in zip(bplot['boxes'], colors[:4]):
+    patch.set_facecolor(color)
+plt.xticks(np.arange(1, 5), providers)
+plt.ylabel('FSP')
+if disaster:
+    plt.savefig(f'Figures/boxplotFSPprovincesdisaster{radius_disaster}.png', dpi=1000)
+elif user_increase:
+    plt.savefig(f'Figures/boxplotFSPprovincesuser_increase{percentage_increase}.png', dpi=1000)
+elif random_failure:
+    plt.savefig(f'Figures/boxplotFSPprovincesrandom{random_p}.png', dpi=1000)
+else:
+    plt.savefig(f'Figures/boxplotFSPprovinces.png', dpi=1000)
+boxplot_data = data_figureFDP.values()
+
+fig, ax = plt.subplots()
+bplot = plt.boxplot(boxplot_data, patch_artist=True, showfliers=False)
+for patch, color in zip(bplot['boxes'], colors[:4]):
+    patch.set_facecolor(color)
+plt.xticks(np.arange(1, 5), providers)
+plt.ylabel('FDP')
+if disaster:
+    plt.savefig(f'Figures/boxplotFDPprovincesdisaster{radius_disaster}.png', dpi=1000)
+elif user_increase:
+    plt.savefig(f'Figures/boxplotFDPprovincesuser_increase{percentage_increase}.png', dpi=1000)
+elif random_failure:
+    plt.savefig(f'Figures/boxplotFDPprovincesrandom{random_p}.png', dpi=1000)
+else:
+    plt.savefig(f'Figures/boxplotFDPprovinces.png', dpi=1000)
 
 
 # --- municipality level ----
@@ -182,6 +184,11 @@ for MNO in mnos:
     df['area'] = areas  # find_municipalities('Netherlands')
 
     geom = []
+
+    Muns = {'Zeeland': 'Middelburg', 'Limburg': 'Maastricht', 'Groningen': 'Groningen', 'Overijssel': 'Enschede',
+            'Drenthe': 'Emmen', 'Gelderland': 'Elburg',
+            'Noord-Brabant': 'Eindhoven', 'Zuid-Holland': "'s-Gravenhage", 'Noord-Holland': 'Amsterdam',
+            'Flevoland': 'Almere'}
 
     for province in provinces:
         areas = find_municipalities(province)
@@ -237,38 +244,38 @@ for MNO in mnos:
 
     df.to_pickle(f'converted_data/{filename}_municipalities.p')
 
-boxplot_data = data_figureFSP.values()
-
-fig, ax = plt.subplots()
-bplot = plt.boxplot(boxplot_data, patch_artist=True, showfliers=False)
-for patch, color in zip(bplot['boxes'], colors[:3]):
-    patch.set_facecolor(color)
-plt.xticks(np.arange(1, 5), providers)
-plt.ylabel('FSP')
-
-if disaster:
-    plt.savefig(f'Figures/FSPmunicipalitiesdisaster{radius_disaster}.png', dpi=1000)
-elif user_increase:
-    plt.savefig(f'Figures/FSPmunicipalitiesuser_increase{percentage_increase}.png', dpi=1000)
-elif random_failure:
-    plt.savefig(f'Figures/FSPmunicipalitiesrandom{random_p}.png', dpi=1000)
-else:
-    plt.savefig(f'Figures/FSPmunicipalities.png', dpi=1000)
-
-boxplot_data = data_figureFDP.values()
-
-fig, ax = plt.subplots()
-bplot = plt.boxplot(boxplot_data, patch_artist=True, showfliers=False)
-for patch, color in zip(bplot['boxes'], colors[:3]):
-    patch.set_facecolor(color)
-plt.xticks(np.arange(1, 5), providers)
-plt.ylabel('FDP')
-
-if disaster:
-    plt.savefig(f'Figures/FDPmunicipalitiesdisaster{radius_disaster}.png', dpi=1000)
-elif user_increase:
-    plt.savefig(f'Figures/FDPmunicipalitiesuser_increase{percentage_increase}.png', dpi=1000)
-elif random_failure:
-    plt.savefig(f'Figures/FDPmunicipalitiesrandom{random_p}.png', dpi=1000)
-else:
-    plt.savefig(f'Figures/FDPmunicipalities.png', dpi=1000)
+# boxplot_data = data_figureFSP.values()
+#
+# fig, ax = plt.subplots()
+# bplot = plt.boxplot(boxplot_data, patch_artist=True, showfliers=False)
+# for patch, color in zip(bplot['boxes'], colors[:3]):
+#     patch.set_facecolor(color)
+# plt.xticks(np.arange(1, 5), providers)
+# plt.ylabel('FSP')
+#
+# if disaster:
+#     plt.savefig(f'Figures/FSPmunicipalitiesdisaster{radius_disaster}.png', dpi=1000)
+# elif user_increase:
+#     plt.savefig(f'Figures/FSPmunicipalitiesuser_increase{percentage_increase}.png', dpi=1000)
+# elif random_failure:
+#     plt.savefig(f'Figures/FSPmunicipalitiesrandom{random_p}.png', dpi=1000)
+# else:
+#     plt.savefig(f'Figures/FSPmunicipalities.png', dpi=1000)
+#
+# boxplot_data = data_figureFDP.values()
+#
+# fig, ax = plt.subplots()
+# bplot = plt.boxplot(boxplot_data, patch_artist=True, showfliers=False)
+# for patch, color in zip(bplot['boxes'], colors[:3]):
+#     patch.set_facecolor(color)
+# plt.xticks(np.arange(1, 5), providers)
+# plt.ylabel('FDP')
+#
+# if disaster:
+#     plt.savefig(f'Figures/FDPmunicipalitiesdisaster{radius_disaster}.png', dpi=1000)
+# elif user_increase:
+#     plt.savefig(f'Figures/FDPmunicipalitiesuser_increase{percentage_increase}.png', dpi=1000)
+# elif random_failure:
+#     plt.savefig(f'Figures/FDPmunicipalitiesrandom{random_p}.png', dpi=1000)
+# else:
+#     plt.savefig(f'Figures/FDPmunicipalities.png', dpi=1000)

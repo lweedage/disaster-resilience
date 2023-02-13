@@ -171,7 +171,7 @@ def find_links(p):
     channel_link = util.from_data(f'data/Realisations/{p.filename}{p.seed}_channel_link.p')
     interf_loss = util.from_data(f'data/Realisations/{p.filename}{p.seed}_interference_loss.p')
 
-    # interf_loss = None
+    FDP = None
     if FDP is None:
         links = lil_matrix((p.number_of_users, p.number_of_bs))
         snrs = lil_matrix((p.number_of_users, p.number_of_bs))
@@ -182,32 +182,72 @@ def find_links(p):
         FSP = np.zeros(p.number_of_users)
         interf_loss = np.zeros(p.number_of_users)
 
+        if p.back_up:
+            maximum = 20
+        else:
+            maximum = 10
+
         bar = progressbar.ProgressBar(maxval=p.number_of_users, widgets=[
             progressbar.Bar('=', f'Finding links {p.filename} [', ']'), ' ',
             progressbar.Percentage(), ' ', progressbar.ETA()])
         bar.start()
 
+        disconnected_users = []
         for user in p.users:
+
             bar.update(int(user.id))
             user_coords = (user.x, user.y)
             BSs = util.find_closest_BS(user_coords, p.xbs, p.ybs)
             best_SINR = - math.inf
             best_measure = -math.inf
 
-            for bs in BSs[:10]:  # assuming that the highest SNR BS will be within the closest 10 BSs
+            for bs in BSs[:maximum]:  # assuming that the highest SNR BS will be within the closest 10 BSs
                 if bs != p.failed_BS:
                     base_station = p.BaseStations[bs]
-                    if not p.geographic_failure or (
-                            p.geographic_failure and (base_station.x, base_station.y) != p.failed_BS_coords):
-                        for channel in base_station.channels:
-                            SINR, p = sinr(user, base_station, channel, p)
-                            # a user connects to the BS with highest SINR/degree
-                            if SINR / max(1, len(channel.users)) > best_measure and SINR >= settings.MINIMUM_SNR:
-                                best_bs = bs
-                                channel_id = int(channel.id)
-                                best_SINR = SINR
-                                SNR, p = snr(user, base_station, channel, p)
-                                best_measure = SINR / max(len(channel.users), 1)
+                    if not p.back_up or (user.provider == base_station.provider and p.back_up):
+                        if not p.geographic_failure or (
+                                p.geographic_failure and (base_station.x, base_station.y) != p.failed_BS_coords):
+                            for channel in base_station.channels:
+                                SINR, p = sinr(user, base_station, channel, p)
+                                # a user connects to the BS with highest SINR/degree
+                                if SINR / max(1, len(channel.users)) > best_measure and SINR >= settings.MINIMUM_SNR:
+                                    best_bs = bs
+                                    channel_id = int(channel.id)
+                                    best_SINR = SINR
+                                    SNR, p = snr(user, base_station, channel, p)
+                                    best_measure = SINR / max(len(channel.users), 1)
+            if best_SINR >= settings.MINIMUM_SNR:
+                interf_loss[user.id] = SNR - best_SINR
+                sinrs[user.id, best_bs] = best_SINR
+                channel_link[user.id, best_bs] = channel_id
+                for c in p.BaseStations[best_bs].channels:
+                    if int(c.id) == channel_id:
+                        c.add_user(user.id)
+                links[user.id, best_bs] = 1
+                snrs[user.id, best_bs] = SNR
+            elif p.back_up:
+                disconnected_users.append(user)
+            else:
+                FDP[user.id] = 1
+
+
+        for user in disconnected_users:
+            best_SINR = - math.inf
+            best_measure = -math.inf
+            user_coords = (user.x, user.y)
+            BSs = util.find_closest_BS(user_coords, p.xbs, p.ybs)
+            for bs in BSs[:maximum]:  # assuming that the highest SNR BS will be within the closest 10 BSs
+                base_station = p.BaseStations[bs]
+                for channel in base_station.channels:
+                    SINR, p = sinr(user, base_station, channel, p)
+                    # a user connects to the BS with highest SINR/degree
+                    if SINR / max(1,
+                                  len(channel.users)) > best_measure and SINR >= settings.MINIMUM_SNR:
+                        best_bs = bs
+                        channel_id = int(channel.id)
+                        best_SINR = SINR
+                        SNR, p = snr(user, base_station, channel, p)
+                        best_measure = SINR / max(len(channel.users), 1)
             if best_SINR >= settings.MINIMUM_SNR:
                 interf_loss[user.id] = SNR - best_SINR
                 sinrs[user.id, best_bs] = best_SINR
@@ -236,7 +276,7 @@ def find_links(p):
                     for i, user in zip(range(len(c.users)), c.users):
                         capacity = shannon_capacity(sinrs[user, bs.id], BW[i])
                         capacities[user] += capacity
-                        if capacities[user] > p.users[user].rate_requirement:
+                        if capacities[user] >= p.users[user].rate_requirement:
                             FSP[user] = 1
 
         if p.seed == 1:
