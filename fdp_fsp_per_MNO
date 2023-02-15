@@ -1,0 +1,64 @@
+With back_up:
+Overijssel:
+KPN         0.001212    0.617367
+T-Mobile    0.001276    0.683787
+Vodafone    0.001299    0.622218
+
+Friesland:
+KPN         0.0027824   0.824708
+T-Mobile    0.0030606   0.867696
+Vodafone    0.0033200   0.832534
+
+Utrecht:
+KPN         0.0002984   0.971501
+T-Mobile    0.0002984   0.975082
+Vodafone    0.0006124   0.973546
+
+Amsterdam:
+KPN         0.0002859   0.933095
+T-Mobile    0.0004289   0.939242
+Vodafone    0.0005488   0.938529
+
+Middelburg:
+KPN         0.0002687   0.936584
+T-Mobile    0.0004031   0.942631
+Vodafone    0.0005123   0.941855
+
+Enschede:
+KPN         0.0003346   0.928508
+T-Mobile    0.0006692   0.938546
+Vodafone    0.0006232   0.935812
+
+
+No back_up:
+Overijssel:
+KPN         0.0128884   0.693102
+T-Mobile    0.0116123   0.760225
+Vodafone    0.0614772   0.629319
+
+Friesland:
+KPN         0.0178907   0.647172
+T-Mobile    0.0148287   0.753685
+Vodafone    0.0809027   0.624300
+
+Utrecht:
+KPN         0.0148628   0.720640
+T-Mobile    0.0111954   0.807114
+Vodafone    0.0643698   0.706517
+
+Amsterdam:
+KPN         0.0224446   0.701644
+T-Mobile    0.0107219   0.828449
+Vodafone    0.0622942   0.807903
+
+Middelburg:
+KPN         0.0210936   0.713691
+T-Mobile    0.0100766   0.838372
+Vodafone    0.0601947   0.815830
+
+Enschede:
+KPN         0.0206335   0.709458
+T-Mobile    0.0105956   0.827013
+Vodafone    0.0558787   0.802243
+
+

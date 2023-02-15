@@ -17,16 +17,21 @@ municipalities = ['Middelburg', 'Maastricht', 'Groningen', 'Enschede', 'Emmen', 
                   'Eindhoven', "'s-Gravenhage", 'Amsterdam', 'Almere']
 
 provinces = ['Overijssel', 'Friesland', 'Utrecht']
-# municipalities = ['Elburg']
+municipalities = ['Amsterdam', 'Middelburg', 'Enschede']
 
 MNOS = [['KPN'], ['T-Mobile'], ['Vodafone'], ['KPN', 'Vodafone', 'T-Mobile']]
-# MNOS = [['KPN']]
-MNOS = [['KPN', 'Vodafone', 'T-Mobile']]
+MNOS = [['KPN'], ['T-Mobile'], ['Vodafone']]
+# MNOS = [['KPN', 'Vodafone', 'T-Mobile']]
+
+fdp_per_MNO = {MNO: list() for MNO in ['KPN', 'T-Mobile', 'Vodafone']}
+fsp_per_MNO = {MNO: list() for MNO in ['KPN', 'T-Mobile', 'Vodafone']}
 
 radius_disaster = 0  # 0, or a value if there is a disaster in the center of the region with radius
 random_failure = 0  # BSs randomly fail with this probability
 user_increase = 0  # an increase in number of users
-back_up = True
+back_up = False
+
+sharing = ['T-Mobile', 'Vodafone']
 
 radii = [500, 1000, 2500]
 increases = [50, 100, 200]
@@ -38,8 +43,8 @@ fig, ax = plt.subplots()
 
 zip_codes = gpd.read_file('data/square_statistics.shp')
 for user_increase in [0]:
-    for province in provinces:
-    # for municipality in municipalities:
+    # for province in provinces:
+    for municipality in municipalities:
         fig, ax = plt.subplots()
         j = 0
         extraticks = [0, 0.4, 0.6, 0.8, 1.0]
@@ -53,16 +58,16 @@ for user_increase in [0]:
                 # popdensity (population density), municipali(city), scenario
 
                 # Region that we want to investigate:
-                cities = util.find_cities(province)
-                # cities = [municipality]
-                # province = None
+                # cities = util.find_cities(province)
+                cities = [municipality]
+                province = None
 
                 percentage = 2  # percentage of active users
                 seed = 1  # iteration
 
                 params = p.Parameters(seed, zip_codes, mno, percentage, buffer_size=2000, city_list=cities,
                                       province=province, radius_disaster=radius_disaster, random_failure=random_failure,
-                                      user_increase=user_increase, capacity_distribution=False, back_up=back_up)
+                                      user_increase=user_increase, capacity_distribution=False, back_up=back_up, sharing = sharing)
                 params = antenna.find_zip_code_region(params)
 
                 # FINDING USERS
@@ -84,10 +89,7 @@ for user_increase in [0]:
                 fdp.append(fraction_disconnected_pop)
                 fsp.append(fraction_satisified_pop)
 
-                graph_functions.draw_graph(params, links, ax)
-
-                fdp_per_MNO = {MNO: list() for MNO in ['KPN', 'T-Mobile', 'Vodafone']}
-                fsp_per_MNO = {MNO: list() for MNO in ['KPN', 'T-Mobile', 'Vodafone']}
+                # graph_functions.draw_graph(params, links, ax)
 
                 for user in params.users:
                     MNO = user.provider
@@ -95,14 +97,15 @@ for user_increase in [0]:
                     fdp_per_MNO[MNO].append(FDP[id])
                     fsp_per_MNO[MNO].append(FSP[id])
 
-                for MNO in ['KPN', 'T-Mobile', 'Vodafone']:
-                    print(MNO, 'FDP: ', sum(fdp_per_MNO[MNO])/len(fdp_per_MNO[MNO]), 'FSP: ', sum(fsp_per_MNO[MNO])/len(fsp_per_MNO[MNO]))
-            #
             util.to_data(fdp, f'data/Realisations/{params.filename}{max_iterations}_totalfdp.p')
             util.to_data(fsp, f'data/Realisations/{params.filename}{max_iterations}_totalfsp.p')
-            if params.back_up:
-                util.to_data(fdp_per_MNO, f'data/Realisations/{params.filename}{max_iterations}_fdp_per_MNO.p')
-                util.to_data(fsp_per_MNO, f'data/Realisations/{params.filename}{max_iterations}_fsp_per_MNO.p')
+
+        if province:
+            print(province, ':',   [sum(fdp_per_MNO[MNO])/len(fdp_per_MNO[MNO]) for MNO in sharing])
+            print(province, ':',   [sum(fsp_per_MNO[MNO])/len(fsp_per_MNO[MNO]) for MNO in sharing])
+
+        util.to_data(fdp_per_MNO, f'data/Realisations/{params.filename}{max_iterations}_fdp_per_MNO.p')
+        util.to_data(fsp_per_MNO, f'data/Realisations/{params.filename}{max_iterations}_fsp_per_MNO.p')
 
 plt.savefig(f'{params.filename}.pdf', dpi=1000)
 plt.show()

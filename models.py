@@ -171,7 +171,7 @@ def find_links(p):
     channel_link = util.from_data(f'data/Realisations/{p.filename}{p.seed}_channel_link.p')
     interf_loss = util.from_data(f'data/Realisations/{p.filename}{p.seed}_interference_loss.p')
 
-    FDP = None
+    # FDP = None
     if FDP is None:
         links = lil_matrix((p.number_of_users, p.number_of_bs))
         snrs = lil_matrix((p.number_of_users, p.number_of_bs))

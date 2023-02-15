@@ -7,11 +7,13 @@ import util as util
 class Parameters:
     def __init__(self, seed, zip_codes, provider_list, percentage, buffer_size, city_list=None, province=None,
                  delta=None, radius_disaster=0, random_failure=0, user_increase=0, capacity_distribution=False,
-                 geographic_failure=False, back_up = False):
+                 geographic_failure=False, back_up=False, sharing=None):
 
+        if sharing is None and back_up:
+            sharing = ['KPN', 'T-Mobile', 'Vodafone']
         self.back_up = back_up
         if back_up:
-            provider_list = ['KPN', 'T-Mobile', 'Vodafone']
+            provider_list = sharing
 
         self.zip_codes = zip_codes
         self.number_of_bs = int()
@@ -85,6 +87,10 @@ class Parameters:
         if back_up:
             self.filename += 'backup'
             self.userfilename += 'backup'
+            if len(sharing) != 3:
+                for i in sharing:
+                    self.filename += i
+                    self.userfilename += i
 
         self.los_probabilities = None
         self.fading4 = None

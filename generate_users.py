@@ -36,34 +36,27 @@ def generate_users(params):
     all_users = util.from_data(f'data/users/{params.userfilename}{params.seed}_all_users.p')
     xs = util.from_data(f'data/users/{params.userfilename}{params.seed}_xs.p')
     ys = util.from_data(f'data/users/{params.userfilename}{params.seed}_ys.p')
+
     all_users = None
     if all_users is None:
         print('Users are not stored in memory')
         np.random.seed(params.seed)
         all_users = list()
 
-        if params.back_up:
-            xs = []
-            ys = []
-            id = 0
-            for MNO in params.providers:
-                percentage_plus_MNO = params.percentages[MNO] * params.percentage
-                x, y = get_population(params.zip_code_region, percentage_plus_MNO)
-                for i in range(len(x)):
-                    rate = np.random.uniform(8, 20)
-                    new_user = UE.UserEquipment(id, x[i], y[i], rate_requirement=rate * 10 ** 6)
-                    new_user.provider = MNO
-                    all_users.append(new_user)
-                    id += 1
-                xs = xs + x
-                ys = ys + y
-        else:
-            xs, ys = get_population(params.zip_code_region, params.percentage_plus_MNO)
-            for i in range(len(xs)):
+        xs = []
+        ys = []
+        id = 0
+        for MNO in params.providers:
+            percentage_plus_MNO = params.percentages[MNO] * params.percentage
+            x, y = get_population(params.zip_code_region, percentage_plus_MNO)
+            for i in range(len(x)):
                 rate = np.random.uniform(8, 20)
-                new_user = UE.UserEquipment(i, xs[i], ys[i], rate_requirement=rate * 10**6)
-                new_user.provider = params.provider
+                new_user = UE.UserEquipment(id, x[i], y[i], rate_requirement=rate * 10 ** 6)
+                new_user.provider = MNO
                 all_users.append(new_user)
+                id += 1
+            xs = xs + x
+            ys = ys + y
 
         util.to_data(all_users, f'data/users/{params.userfilename}{params.seed}_all_users.p')
         util.to_data(xs, f'data/users/{params.userfilename}{params.seed}_xs.p')

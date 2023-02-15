@@ -69,7 +69,7 @@ def load_bs(params):
     else:
         new_region = params.region
 
-    radios = None
+    # radios = None
     if radios is None:
         print('BSs are not stored in memory')
         all_basestations = list()
