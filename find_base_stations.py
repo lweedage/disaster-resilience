@@ -150,6 +150,7 @@ def load_bs(params):
                                 id += 1
                                 radios.append(bs.get("type"))
 
+
             # bar.finish()
         params.xbs = xs
         params.ybs = ys

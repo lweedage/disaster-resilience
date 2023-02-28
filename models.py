@@ -171,7 +171,7 @@ def find_links(p):
     channel_link = util.from_data(f'data/Realisations/{p.filename}{p.seed}_channel_link.p')
     interf_loss = util.from_data(f'data/Realisations/{p.filename}{p.seed}_interference_loss.p')
 
-    # FDP = None
+    FDP = None
     if FDP is None:
         links = lil_matrix((p.number_of_users, p.number_of_bs))
         snrs = lil_matrix((p.number_of_users, p.number_of_bs))
@@ -182,15 +182,159 @@ def find_links(p):
         FSP = np.zeros(p.number_of_users)
         interf_loss = np.zeros(p.number_of_users)
 
-        if p.back_up:
-            maximum = 20
-        else:
-            maximum = 10
+        maximum = 20
 
         bar = progressbar.ProgressBar(maxval=p.number_of_users, widgets=[
             progressbar.Bar('=', f'Finding links {p.filename} [', ']'), ' ',
             progressbar.Percentage(), ' ', progressbar.ETA()])
         bar.start()
+
+        connections = {'KPN': {'KPN': 0, 'T-Mobile': 0, 'Vodafone': 0},
+                       'T-Mobile': {'KPN': 0, 'T-Mobile': 0, 'Vodafone': 0},
+                       'Vodafone': {'KPN': 0, 'T-Mobile': 0, 'Vodafone': 0}}
+        disconnected = {'KPN': 0, 'T-Mobile': 0, 'Vodafone': 0}
+
+        disconnected_users = []
+        for user in p.users:
+
+            bar.update(int(user.id))
+            user_coords = (user.x, user.y)
+            BSs = util.find_closest_BS(user_coords, p.xbs, p.ybs)
+            best_SINR = - math.inf
+            best_measure = -math.inf
+
+            for bs in BSs[:maximum]:  # assuming that the highest SINR BS will be within the closest 20 BSs
+                if bs != p.failed_BS:
+                    base_station = p.BaseStations[bs]
+                    if not p.back_up or (user.provider == base_station.provider and p.back_up):
+                        if not p.geographic_failure or (
+                                p.geographic_failure and (base_station.x, base_station.y) != p.failed_BS_coords):
+                            for channel in base_station.channels:
+                                SINR, p = sinr(user, base_station, channel, p)
+                                # a user connects to the BS with highest SINR/degree
+                                if SINR / max(1, len(channel.users)) > best_measure and SINR >= settings.MINIMUM_SNR:
+                                    best_bs = bs
+                                    channel_id = int(channel.id)
+                                    best_SINR = SINR
+                                    SNR, p = snr(user, base_station, channel, p)
+                                    best_measure = SINR / max(len(channel.users), 1)
+            if best_SINR >= settings.MINIMUM_SNR:
+                sinrs[user.id, best_bs] = best_SINR
+                channel_link[user.id, best_bs] = channel_id
+                for c in p.BaseStations[best_bs].channels:
+                    if int(c.id) == channel_id:
+                        c.add_user(user.id)
+                links[user.id, best_bs] = 1
+                snrs[user.id, best_bs] = SNR
+                connections[p.BaseStations[best_bs].provider][user.provider] += 1
+            elif p.back_up:
+                disconnected_users.append(user)
+                disconnected[user.provider] += 1
+            else:
+                FDP[user.id] = 1
+                disconnected[user.provider] += 1
+        #
+        # print(connections)
+        # # print([p.BaseStations[id].provider for id in range(len(p.BaseStations))])
+        # print('Total number of disconnected users:', len(disconnected_users), 'out of', len(p.users))
+        # print('Disconnected per MNO:', disconnected)
+
+
+        connections_disconnected = {'KPN': {'KPN': 0, 'T-Mobile': 0, 'Vodafone': 0},
+                                    'T-Mobile': {'KPN': 0, 'T-Mobile': 0, 'Vodafone': 0},
+                                    'Vodafone': {'KPN': 0, 'T-Mobile': 0, 'Vodafone': 0}}
+        for user in disconnected_users:
+            best_SINR = - math.inf
+            best_measure = -math.inf
+            user_coords = (user.x, user.y)
+            BSs = util.find_closest_BS(user_coords, p.xbs, p.ybs)
+            for bs in BSs[:maximum]:  # assuming that the highest SNR BS will be within the closest 10 BSs
+                base_station = p.BaseStations[bs]
+                if base_station.provider != user.provider:
+                    for channel in base_station.channels:
+                        SINR, p = sinr(user, base_station, channel, p)
+                        # a user connects to the BS with highest SINR/degree
+                        if SINR / max(1, len(channel.users)) > best_measure and SINR >= settings.MINIMUM_SNR:
+                            best_bs = bs
+                            channel_id = int(channel.id)
+                            best_SINR = SINR
+                            SNR, p = snr(user, base_station, channel, p)
+                            best_measure = SINR / max(len(channel.users), 1)
+            if best_SINR >= settings.MINIMUM_SNR:
+                sinrs[user.id, best_bs] = best_SINR
+                channel_link[user.id, best_bs] = channel_id
+                for c in p.BaseStations[best_bs].channels:
+                    if int(c.id) == channel_id:
+                        c.add_user(user.id)
+                links[user.id, best_bs] = 1
+                snrs[user.id, best_bs] = SNR
+                connections_disconnected[p.BaseStations[best_bs].provider][user.provider] += 1
+            else:
+                FDP[user.id] = 1
+
+        # print(connections_disconnected)
+        bar.finish()
+
+        print('Now, we find the capacities')
+        for bs in p.BaseStations:
+            for c in bs.channels:
+                if len(c.users) > 0:
+                    # first, find the spectral efficiency of all users in this channel
+                    SE = [math.log2(1 + util.to_pwr(sinrs[user, bs.id])) for user in c.users]
+                    # then, we find the required bandwidth per user
+                    BW = [p.users[user].rate_requirement / SE[i] for i, user in zip(range(len(SE)), c.users)]
+                    # if there is more BW required than the channel has, we decrease the BW with that percentage for everyone
+                    BW = np.multiply(min(len(c.users), 1) * c.bandwidth / sum(BW), BW)
+
+                    for i, user in zip(range(len(c.users)), c.users):
+                        capacity = shannon_capacity(sinrs[user, bs.id], BW[i])
+                        capacities[user] = capacity
+                        if capacities[user] >= p.users[user].rate_requirement:
+                            FSP[user] = 1
+
+        if p.seed == 1:
+            util.to_data(links, f'data/Realisations/{p.filename}{p.seed}_links.p')
+            util.to_data(snrs, f'data/Realisations/{p.filename}{p.seed}_snrs.p')
+        util.to_data(sinrs, f'data/Realisations/{p.filename}{p.seed}_sinrs.p')
+        util.to_data(capacities, f'data/Realisations/{p.filename}{p.seed}_capacities.p')
+        util.to_data(FDP, f'data/Realisations/{p.filename}{p.seed}_FDP.p')
+        util.to_data(FSP, f'data/Realisations/{p.filename}{p.seed}_FSP.p')
+        util.to_data(interf_loss, f'data/Realisations/{p.filename}{p.seed}_interference_loss.p')
+
+    return links, channel_link, snrs, sinrs, capacities, FDP, FSP, interf_loss
+
+def find_links_QoS(p):
+    links = util.from_data(f'data/Realisations/{p.filename}{p.seed}_linksQOS.p')
+    snrs = util.from_data(f'data/Realisations/{p.filename}{p.seed}_snrsQOS.p')
+    sinrs = util.from_data(f'data/Realisations/{p.filename}{p.seed}_sinrsQOS.p')
+    capacities = util.from_data(f'data/Realisations/{p.filename}{p.seed}_capacitiesQOS.p')
+    FDP = util.from_data(f'data/Realisations/{p.filename}{p.seed}_FDPQOS.p')
+    FSP = util.from_data(f'data/Realisations/{p.filename}{p.seed}_FSPQOS.p')
+    channel_link = util.from_data(f'data/Realisations/{p.filename}{p.seed}_channel_linkQOS.p')
+    interf_loss = util.from_data(f'data/Realisations/{p.filename}{p.seed}_interference_lossQOS.p')
+
+    FDP = None
+    if FDP is None:
+        links = lil_matrix((p.number_of_users, p.number_of_bs))
+        snrs = lil_matrix((p.number_of_users, p.number_of_bs))
+        sinrs = lil_matrix((p.number_of_users, p.number_of_bs))
+        channel_link = lil_matrix((p.number_of_users, p.number_of_bs))
+        capacities = np.zeros(p.number_of_users)
+        FDP = np.zeros(p.number_of_users)
+        FSP = np.zeros(p.number_of_users)
+        interf_loss = np.zeros(p.number_of_users)
+
+        maximum = 20
+
+        bar = progressbar.ProgressBar(maxval=p.number_of_users, widgets=[
+            progressbar.Bar('=', f'Finding links {p.filename} [', ']'), ' ',
+            progressbar.Percentage(), ' ', progressbar.ETA()])
+        bar.start()
+
+        connections = {'KPN': {'KPN': 0, 'T-Mobile': 0, 'Vodafone': 0},
+                       'T-Mobile': {'KPN': 0, 'T-Mobile': 0, 'Vodafone': 0},
+                       'Vodafone': {'KPN': 0, 'T-Mobile': 0, 'Vodafone': 0}}
+        disconnected = {'KPN': 0, 'T-Mobile': 0, 'Vodafone': 0}
 
         disconnected_users = []
         for user in p.users:
@@ -217,7 +361,6 @@ def find_links(p):
                                     SNR, p = snr(user, base_station, channel, p)
                                     best_measure = SINR / max(len(channel.users), 1)
             if best_SINR >= settings.MINIMUM_SNR:
-                interf_loss[user.id] = SNR - best_SINR
                 sinrs[user.id, best_bs] = best_SINR
                 channel_link[user.id, best_bs] = channel_id
                 for c in p.BaseStations[best_bs].channels:
@@ -225,44 +368,19 @@ def find_links(p):
                         c.add_user(user.id)
                 links[user.id, best_bs] = 1
                 snrs[user.id, best_bs] = SNR
-            elif p.back_up:
+                connections[p.BaseStations[best_bs].provider][user.provider] += 1
+            else:
                 disconnected_users.append(user)
-            else:
-                FDP[user.id] = 1
+                disconnected[user.provider] += 1
+
+        #
+        # print(connections)
+        # # print([p.BaseStations[id].provider for id in range(len(p.BaseStations))])
+        # print('Total number of disconnected users:', len(disconnected_users), 'out of', len(p.users))
+        # print('Disconnected per MNO:', disconnected)
 
 
-        for user in disconnected_users:
-            best_SINR = - math.inf
-            best_measure = -math.inf
-            user_coords = (user.x, user.y)
-            BSs = util.find_closest_BS(user_coords, p.xbs, p.ybs)
-            for bs in BSs[:maximum]:  # assuming that the highest SNR BS will be within the closest 10 BSs
-                base_station = p.BaseStations[bs]
-                for channel in base_station.channels:
-                    SINR, p = sinr(user, base_station, channel, p)
-                    # a user connects to the BS with highest SINR/degree
-                    if SINR / max(1,
-                                  len(channel.users)) > best_measure and SINR >= settings.MINIMUM_SNR:
-                        best_bs = bs
-                        channel_id = int(channel.id)
-                        best_SINR = SINR
-                        SNR, p = snr(user, base_station, channel, p)
-                        best_measure = SINR / max(len(channel.users), 1)
-            if best_SINR >= settings.MINIMUM_SNR:
-                interf_loss[user.id] = SNR - best_SINR
-                sinrs[user.id, best_bs] = best_SINR
-                channel_link[user.id, best_bs] = channel_id
-                for c in p.BaseStations[best_bs].channels:
-                    if int(c.id) == channel_id:
-                        c.add_user(user.id)
-                links[user.id, best_bs] = 1
-                snrs[user.id, best_bs] = SNR
-            else:
-                FDP[user.id] = 1
-
-        bar.finish()
-
-        print('Now, we find the capacities')
+        print('Now, we find the capacities in the first round')
         for bs in p.BaseStations:
             for c in bs.channels:
                 if len(c.users) > 0:
@@ -275,47 +393,73 @@ def find_links(p):
 
                     for i, user in zip(range(len(c.users)), c.users):
                         capacity = shannon_capacity(sinrs[user, bs.id], BW[i])
-                        capacities[user] += capacity
+                        capacities[user] = capacity
+                        if capacities[user] >= p.users[user].rate_requirement:
+                            FSP[user] = 1
+
+
+
+        connections_disconnected = {'KPN': {'KPN': 0, 'T-Mobile': 0, 'Vodafone': 0},
+                                    'T-Mobile': {'KPN': 0, 'T-Mobile': 0, 'Vodafone': 0},
+                                    'Vodafone': {'KPN': 0, 'T-Mobile': 0, 'Vodafone': 0}}
+
+        for user in disconnected_users:
+            best_SINR = - math.inf
+            best_measure = -math.inf
+            user_coords = (user.x, user.y)
+            BSs = util.find_closest_BS(user_coords, p.xbs, p.ybs)
+            for bs in BSs[:maximum]:  # assuming that the highest SNR BS will be within the closest 10 BSs
+                base_station = p.BaseStations[bs]
+                if base_station.provider != user.provider:
+                    for channel in base_station.channels:
+                        if sum([FSP[u] for u in channel.users]) == len(channel.users): #ensure that the users that are connected are satisfied. TODO still could happen that after adding a user they are not satisfied any more...
+                            SINR, p = sinr(user, base_station, channel, p)
+                            # a user connects to the BS with highest SINR/degree
+                            if SINR / max(1, len(channel.users)) > best_measure and SINR >= settings.MINIMUM_SNR:
+                                best_bs = bs
+                                channel_id = int(channel.id)
+                                best_SINR = SINR
+                                SNR, p = snr(user, base_station, channel, p)
+                                best_measure = SINR / max(len(channel.users), 1)
+            if best_SINR >= settings.MINIMUM_SNR:
+                sinrs[user.id, best_bs] = best_SINR
+                channel_link[user.id, best_bs] = channel_id
+                for c in p.BaseStations[best_bs].channels:
+                    if int(c.id) == channel_id:
+                        c.add_user(user.id)
+                links[user.id, best_bs] = 1
+                snrs[user.id, best_bs] = SNR
+                connections_disconnected[p.BaseStations[best_bs].provider][user.provider] += 1
+            else:
+                FDP[user.id] = 1
+
+        # print(connections_disconnected)
+        bar.finish()
+
+        print('Now, we find the capacities for the second round')
+        for bs in p.BaseStations:
+            for c in bs.channels:
+                if len(c.users) > 0:
+                    # first, find the spectral efficiency of all users in this channel
+                    SE = [math.log2(1 + util.to_pwr(sinrs[user, bs.id])) for user in c.users]
+                    # then, we find the required bandwidth per user
+                    BW = [p.users[user].rate_requirement / SE[i] for i, user in zip(range(len(SE)), c.users)]
+                    # if there is more BW required than the channel has, we decrease the BW with that percentage for everyone
+                    BW = np.multiply(min(len(c.users), 1) * c.bandwidth / sum(BW), BW)
+
+                    for i, user in zip(range(len(c.users)), c.users):
+                        capacity = shannon_capacity(sinrs[user, bs.id], BW[i])
+                        capacities[user] = capacity
                         if capacities[user] >= p.users[user].rate_requirement:
                             FSP[user] = 1
 
         if p.seed == 1:
-            util.to_data(links, f'data/Realisations/{p.filename}{p.seed}_links.p')
-            util.to_data(snrs, f'data/Realisations/{p.filename}{p.seed}_snrs.p')
-        util.to_data(sinrs, f'data/Realisations/{p.filename}{p.seed}_sinrs.p')
-        util.to_data(capacities, f'data/Realisations/{p.filename}{p.seed}_capacities.p')
-        util.to_data(FDP, f'data/Realisations/{p.filename}{p.seed}_FDP.p')
-        util.to_data(FSP, f'data/Realisations/{p.filename}{p.seed}_FSP.p')
-        util.to_data(interf_loss, f'data/Realisations/{p.filename}{p.seed}_interference_loss.p')
+            util.to_data(links, f'data/Realisations/{p.filename}{p.seed}_linksQOS.p')
+            util.to_data(snrs, f'data/Realisations/{p.filename}{p.seed}_snrsQOS.p')
+        util.to_data(sinrs, f'data/Realisations/{p.filename}{p.seed}_sinrsQOS.p')
+        util.to_data(capacities, f'data/Realisations/{p.filename}{p.seed}_capacitiesQOS.p')
+        util.to_data(FDP, f'data/Realisations/{p.filename}{p.seed}_FDPQOS.p')
+        util.to_data(FSP, f'data/Realisations/{p.filename}{p.seed}_FSPQOS.p')
+        util.to_data(interf_loss, f'data/Realisations/{p.filename}{p.seed}_interference_lossQOS.p')
 
     return links, channel_link, snrs, sinrs, capacities, FDP, FSP, interf_loss
-
-
-def find_links_heatmap(p):
-    sinrs = util.from_data(f'data/Realisations/{p.filename}{p.seed}_sinrs.p')
-    if sinrs is None:
-        sinrs = np.zeros(p.number_of_users)
-        bar = progressbar.ProgressBar(maxval=p.number_of_users, widgets=[
-            progressbar.Bar('=', f'Finding links {p.filename} [', ']'), ' ',
-            progressbar.Percentage(), ' ', progressbar.ETA()])
-        bar.start()
-        for user in p.users:
-            bar.update(int(user.id))
-            user_coords = (user.x, user.y)
-            BSs = util.find_closest_BS(user_coords, p.xbs, p.ybs)
-            best_SINR = - 1000
-            for bs in BSs[:10]:  # assuming that the highest SINR BS will be within the closest 10 BSs
-                if bs != p.failed_BS:
-                    base_station = p.BaseStations[bs]
-                    if not p.geographic_failure or (
-                            p.geographic_failure and (base_station.x, base_station.y) != p.failed_BS_coords):
-                        for channel in base_station.channels:
-                            SINR, p = sinr(user, base_station, channel, p)
-                            if SINR > best_SINR:
-                                best_SINR = SINR
-
-            sinrs[int(user.id)] = best_SINR
-
-        bar.finish()
-        util.to_data(sinrs, f'data/Realisations/{p.filename}{p.seed}_sinrs.p')
-    return sinrs

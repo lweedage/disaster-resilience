@@ -22,7 +22,6 @@ class Parameters:
         self.percentage = percentage
         self.providers = provider_list
         self.seed = seed
-        self.percentage = percentage
 
         self.region = None
         self.zip_code_region = None
@@ -43,10 +42,10 @@ class Parameters:
             self.cities = city_list
             self.city_name = city_list[0]
 
-        self.percentages = {'KPN': 0.4, 'T-Mobile': 0.4, 'Vodafone': 0.2}
+        self.percentages = {'KPN': 0.33, 'T-Mobile': 0.33, 'Vodafone': 0.33}
 
-        if len(provider_list) == 1:
-            provider = provider_list[0]
+        if len(self.providers) == 1:
+            provider = self.providers[0]
             percentage_MNO = self.percentages[provider]
 
         else:
@@ -91,6 +90,7 @@ class Parameters:
                 for i in sharing:
                     self.filename += i
                     self.userfilename += i
+                    self.bsfilename += i
 
         self.los_probabilities = None
         self.fading4 = None
@@ -126,6 +126,7 @@ class Parameters:
         self.fading6 = scipy.sparse.lil_matrix((self.number_of_users, self.number_of_bs))
         self.fading78 = scipy.sparse.lil_matrix((self.number_of_users, self.number_of_bs))
         self.fading8 = scipy.sparse.lil_matrix((self.number_of_users, self.number_of_bs))
+
 
         self.path_loss = dict()
         self.interference = dict()

@@ -8,24 +8,25 @@ import geopandas as gpd
 from shapely.ops import unary_union
 
 
-def generate_random(number, polygon):  # to generate users per zip code
+def generate_random(number, polygon, iteration):  # to generate users per zip code
     points = []
+    r = random.Random(number * iteration)
     minx, miny, maxx, maxy = polygon.bounds
     while len(points) < number:
-        pnt = Point(random.uniform(minx, maxx), random.uniform(miny, maxy))
+        pnt = Point(r.uniform(minx, maxx), r.uniform(miny, maxy))
         if polygon.contains(pnt):
             points.append(pnt)
     return points
 
 
 # find all users in the specific zip codes
-def get_population(zip_codes_region, percentage):
+def get_population(zip_codes_region, percentage, iteration):
     users = []
-    division_parameter = percentage / 100
+    division_parameter = percentage
     for index, row in zip_codes_region.iterrows():
         polygon = row['geometry']
         number_of_users = row['aantal_inw']
-        points = generate_random(np.ceil(number_of_users * division_parameter), polygon)
+        points = generate_random(np.ceil(number_of_users * division_parameter), polygon, iteration)
         users += points
     xs = [point.x for point in users]
     ys = [point.y for point in users]
@@ -36,9 +37,9 @@ def generate_users(params):
     all_users = util.from_data(f'data/users/{params.userfilename}{params.seed}_all_users.p')
     xs = util.from_data(f'data/users/{params.userfilename}{params.seed}_xs.p')
     ys = util.from_data(f'data/users/{params.userfilename}{params.seed}_ys.p')
-
     all_users = None
-    if all_users is None:
+
+    if all_users is None or 'provider' not in dir(all_users[0]):
         print('Users are not stored in memory')
         np.random.seed(params.seed)
         all_users = list()
@@ -46,18 +47,20 @@ def generate_users(params):
         xs = []
         ys = []
         id = 0
+        mno_index = 1
         for MNO in params.providers:
+            mno_index += 1
             percentage_plus_MNO = params.percentages[MNO] * params.percentage
-            x, y = get_population(params.zip_code_region, percentage_plus_MNO)
+            x, y = get_population(params.zip_code_region, percentage_plus_MNO, params.seed)
             for i in range(len(x)):
-                rate = np.random.uniform(8, 20)
+                r = random.Random(i * mno_index + params.number_of_users * params.seed)
+                rate = r.uniform(8, 20)
                 new_user = UE.UserEquipment(id, x[i], y[i], rate_requirement=rate * 10 ** 6)
                 new_user.provider = MNO
                 all_users.append(new_user)
                 id += 1
             xs = xs + x
             ys = ys + y
-
         util.to_data(all_users, f'data/users/{params.userfilename}{params.seed}_all_users.p')
         util.to_data(xs, f'data/users/{params.userfilename}{params.seed}_xs.p')
         util.to_data(ys, f'data/users/{params.userfilename}{params.seed}_ys.p')
@@ -99,7 +102,8 @@ def generate_users_grid(params, delta):
                 if params.capacity_distribution:
                     p = 8
                 else:
-                    p = np.random.uniform(8, 20)
+                    r = random.Random(j + params.number_of_users * params.seed)
+                    p = r.uniform(8, 20)
                 new_user = UE.UserEquipment(i, xs[j], ys[j], rate_requirement=p * 10 ** 6)
                 all_users.append(new_user)
                 i += 1

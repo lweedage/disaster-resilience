@@ -1,0 +1,148 @@
+KPN - T-Mobile - Vodafone
+
+No cooperation
+'Middelburg' : [0.0026246719160104987, 0.0005249343832020997, 0.030446194225721784],
+'Enschede' : [0.014639905548996458, 0.014639905548996458, 0.0358913813459268],
+'Amsterdam' : [0.021023936170212768, 0.011888297872340426, 0.05227393617021277],
+
+'Overijssel' : [0.014276698688731505, 0.011836477105392328, 0.05137087160788163],
+'Friesland' : [0.020874741946324837, 0.015243170579480532, 0.06814057323923375],
+'Utrecht' : [0.017255531212392386, 0.011861634831980744, 0.053719875335575644]
+
+
+'Middelburg' :[0.8724409448818897, 0.9301837270341208, 0.8026246719160105],
+'Enschede' :  [0.748642266824085, 0.8451003541912633, 0.635655253837072],
+'Amsterdam' : [0.742061170212766, 0.8501994680851064, 0.6776994680851064],
+
+'Overijssel' : [0.70194236028329, 0.7646448355655283, 0.6060374447794685],
+'Friesland' : [0.6588842479235681, 0.7576215852897402, 0.6048009986077104],
+'Utrecht' : [0.7367358903940506, 0.8143950381090506, 0.6777794920850434]
+
+
+
+NR-Full
+'Overijssel' : [0.0034429563144239535, 0.003015216324240937, 0.003421919921464133],
+'Friesland' : [0.004220077776177445, 0.003965624849968793, 0.004220077776177445],
+'Utrecht' : [0.0035023297435739192, 0.003252383744252785, 0.003505415496651958]
+
+'Middelburg' : [0.0, 0.0, 0.0005249343832020997]
+'Enschede' : [0.005076741440377804, 0.004722550177095631, 0.005548996458087367]
+'Amsterdam' : [0.0025, 0.002792553191489362, 0.0025930851063829786]
+
+
+'Overijssel' : [0.7853797068929248, 0.8439730734170114, 0.8288899796648201],
+'Friesland' : [0.7759277929809401, 0.8373805751596332, 0.8228815593643478],
+'Utrecht' : [0.836442743851637, 0.8818835436788348, 0.8721017064214521]
+
+'Middelburg' : [0.9443569553805774, 0.9590551181102362, 0.9590551181102362]
+'Enschede' : [0.8638724911452185, 0.9008264462809917, 0.8933884297520661]
+'Amsterdam' : [0.8898803191489362, 0.9166489361702128, 0.9163563829787233]
+
+
+
+NR-Fallback
+
+'Middelburg' :  [0.0, 0.0005249343832020997, 0.0],
+'Enschede' : [0.0018890200708382527, 0.0010625737898465172, 0.001652892561983471],
+'Amsterdam' : [0.004462753175420529, 0.004085135599038792, 0.003913491246138002],
+
+'Overijssel' : [0.0017810812705981347, 0.0016688871748124256, 0.0016969356987588528],
+'Friesland' : [0.002592539248163618, 0.0026501512314561428, 0.002582937250948197],
+'Utrecht' : [0.0019532816983984943, 0.002008825253803191, 0.0018977381429937977]
+
+
+'Middelburg': [0.8083989501312336, 0.8288713910761155, 0.9002624671916011],
+'Enschede' : [0.7212514757969304, 0.6762691853600945, 0.8208972845336482],
+'Amsterdam' :  [0.672605561277034, 0.720871953312736, 0.7412289735667696],
+
+'Overijssel' : [0.6250473318841596, 0.5747142556622957, 0.6852394642731926],
+'Friesland' : [0.5889144942147967, 0.5883815833693409, 0.6792692880119064],
+'Utrecht' : [0.7226586848520381, 0.7258246675101059, 0.7840651711050082]
+
+
+
+
+NR-Fallback T-Mobile and Vodafone
+'Middelburg' : [0.0, 0.00026246719160104987],
+'Enschede' : [0.001652892561983471, 0.0020070838252656434],
+'Amsterdam' : [0.001023936170212766, 0.0009042553191489362],
+
+'Overijssel' : [0.0018231540565177757, 0.0016829114367856392],
+'Friesland' : [0.0027461712036103507, 0.0025157232704402514],
+'Utrecht' : [0.002055111549973771, 0.0019069954022279138]
+
+'Middelburg': [0.9916010498687664, 0.9939632545931758],
+'Enschede' : [0.9445100354191264, 0.9570247933884297],
+'Amsterdam': [0.9578590425531915, 0.9615425531914894],
+'Overijssel' : [0.5990954351027277, 0.7113386158053432],
+'Friesland' : [0.6121705314705459, 0.7075711748043593],
+'Utrecht : [0.7443885580275866, 0.8068102570432314]
+
+Full-NR
+Middelburg:
+'KPN': {'KPN': 154, 'T-Mobile': 122, 'Vodafone': 136}, 'T-Mobile': {'KPN': 156, 'T-Mobile': 163, 'Vodafone': 155}, 'Vodafone': {'KPN': 71, 'T-Mobile': 96, 'Vodafone': 90}}
+Total number of disconnected users: 0 out of 1143
+Disconnected per MNO: {'KPN': 0, 'T-Mobile': 0, 'Vodafone': 0}
+
+Enschede:
+'KPN': {'KPN': 463, 'T-Mobile': 465, 'Vodafone': 479}, 'T-Mobile': {'KPN': 572, 'T-Mobile': 610, 'Vodafone': 585}, 'Vodafone': {'KPN': 271, 'T-Mobile': 229, 'Vodafone': 239}}
+Total number of disconnected users: 26 out of 3939
+Disconnected per MNO: {'KPN': 7, 'T-Mobile': 9, 'Vodafone': 10}
+
+Amsterdam:
+'KPN': {'KPN': 1836, 'T-Mobile': 1935, 'Vodafone': 1885}, 'T-Mobile': {'KPN': 2674, 'T-Mobile': 2669, 'Vodafone': 2667}, 'Vodafone': {'KPN': 1275, 'T-Mobile': 1179, 'Vodafone': 1237}}
+Total number of disconnected users: 121 out of 17478
+Disconnected per MNO: {'KPN': 41, 'T-Mobile': 43, 'Vodafone': 37}
+
+
+Overijssel:
+'KPN': {'KPN': 5138, 'T-Mobile': 5325, 'Vodafone': 5300}, 'T-Mobile': {'KPN': 6067, 'T-Mobile': 6037, 'Vodafone': 5945}, 'Vodafone': {'KPN': 3009, 'T-Mobile': 2852, 'Vodafone': 2978}}
+Total number of disconnected users: 0 out of 42783
+Disconnected per MNO: {'KPN': 47, 'T-Mobile': 47, 'Vodafone': 38}
+
+Friesland:
+'KPN': {'KPN': 2123, 'T-Mobile': 2058, 'Vodafone': 2079}, 'T-Mobile': {'KPN': 2950, 'T-Mobile': 2906, 'Vodafone': 2927}, 'Vodafone': {'KPN': 1450, 'T-Mobile': 1564, 'Vodafone': 1528}}
+Total number of disconnected users: 0 out of 19704
+Disconnected per MNO: {'KPN': 45, 'T-Mobile': 40, 'Vodafone': 34}
+
+Utrecht:
+'KPN': {'KPN': 4066, 'T-Mobile': 4306, 'Vodafone': 4163}, 'T-Mobile': {'KPN': 5000, 'T-Mobile': 4928, 'Vodafone': 4893}, 'Vodafone': {'KPN': 2450, 'T-Mobile': 2301, 'Vodafone': 2458}}
+Total number of disconnected users: 0 out of 34734
+Disconnected per MNO: {'KPN': 62, 'T-Mobile': 43, 'Vodafone': 64}
+
+
+
+NR-Fallback
+Middelburg:
+Total number of disconnected users: 47 out of 1143 (4.1%)
+Disconnected per MNO: {'KPN': 3, 'T-Mobile': 4, 'Vodafone': 40}
+{'KPN': {'KPN': 0, 'T-Mobile': 4, 'Vodafone': 14}, 'T-Mobile': {'KPN': 2, 'T-Mobile': 0, 'Vodafone': 26}, 'Vodafone': {'KPN': 1, 'T-Mobile': 0, 'Vodafone': 0}}
+
+Enschede: (1313 users per MNO)
+Total number of disconnected users: 236 out of 3939 (6.0%)
+Disconnected per MNO: {'KPN': 73 (5.6%), 'T-Mobile': 31 (2.4%), 'Vodafone': 132 (10.1%)}
+{'KPN': {'KPN': 0, 'T-Mobile': 21, 'Vodafone': 44}, 'T-Mobile': {'KPN': 63, 'T-Mobile': 0, 'Vodafone': 85}, 'Vodafone': {'KPN': 8, 'T-Mobile': 7, 'Vodafone': 0}}
+
+Amsterdam:
+'KPN': {'KPN': 5037, 'T-Mobile': 0, 'Vodafone': 0}, 'T-Mobile': {'KPN': 0, 'T-Mobile': 5511, 'Vodafone': 0}, 'Vodafone': {'KPN': 0, 'T-Mobile': 0, 'Vodafone': 4535}}
+Total number of disconnected users: 2395 out of 17478
+Disconnected per MNO: {'KPN': 789, 'T-Mobile': 315, 'Vodafone': 1291}
+{'KPN': {'KPN': 0, 'T-Mobile': 188, 'Vodafone': 479}, 'T-Mobile': {'KPN': 609, 'T-Mobile': 0, 'Vodafone': 793}, 'Vodafone': {'KPN': 162, 'T-Mobile': 108, 'Vodafone': 0}}
+
+Overijssel:
+{'KPN': {'KPN': 13730, 'T-Mobile': 0, 'Vodafone': 0}, 'T-Mobile': {'KPN': 0, 'T-Mobile': 13854, 'Vodafone': 0}, 'Vodafone': {'KPN': 0, 'T-Mobile': 0, 'Vodafone': 12604}}
+Total number of disconnected users: 2595 out of 42783
+Disconnected per MNO: {'KPN': 531, 'T-Mobile': 407, 'Vodafone': 1657}
+{'KPN': {'KPN': 0, 'T-Mobile': 309, 'Vodafone': 733}, 'T-Mobile': {'KPN': 427, 'T-Mobile': 0, 'Vodafone': 900}, 'Vodafone': {'KPN': 82, 'T-Mobile': 78, 'Vodafone': 0}}
+
+Friesland:
+{'KPN': {'KPN': 6222, 'T-Mobile': 0, 'Vodafone': 0}, 'T-Mobile': {'KPN': 0, 'T-Mobile': 6295, 'Vodafone': 0}, 'Vodafone': {'KPN': 0, 'T-Mobile': 0, 'Vodafone': 5649}}
+Total number of disconnected users: 1538 out of 19704
+Disconnected per MNO: {'KPN': 346, 'T-Mobile': 273, 'Vodafone': 919}
+{'KPN': {'KPN': 0, 'T-Mobile': 199, 'Vodafone': 351}, 'T-Mobile': {'KPN': 255, 'T-Mobile': 0, 'Vodafone': 533}, 'Vodafone': {'KPN': 64, 'T-Mobile': 45, 'Vodafone': 0}}
+
+Utrecht:
+0{'KPN': {'KPN': 10685, 'T-Mobile': 0, 'Vodafone': 0}, 'T-Mobile': {'KPN': 0, 'T-Mobile': 11207, 'Vodafone': 0}, 'Vodafone': {'KPN': 0, 'T-Mobile': 0, 'Vodafone': 9928}}
+Total number of disconnected users: 2914 out of 34734
+Disconnected per MNO: {'KPN': 893, 'T-Mobile': 371, 'Vodafone': 1650}
+{'KPN': {'KPN': 0, 'T-Mobile': 245, 'Vodafone': 674}, 'T-Mobile': {'KPN': 678, 'T-Mobile': 0, 'Vodafone': 949}, 'Vodafone': {'KPN': 189, 'T-Mobile': 114, 'Vodafone': 0}}
