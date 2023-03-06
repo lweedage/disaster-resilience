@@ -1,0 +1,32 @@
+Failure: 0
+Users are not stored in memory
+Now, we find the capacities in the first round
+Now, we find the capacities for the second round
+Overijssel : [0.015566930790267162, 0.0057499474090176]
+Overijssel : [0.5557113806885913, 0.7374658158614403]
+Users are not stored in memory
+Now, we find the capacities in the first round
+Now, we find the capacities for the second round
+Friesland : [0.02237265351193048, 0.010370156992654473]
+Friesland : [0.5724710739833886, 0.7277833789428201]
+Users are not stored in memory
+Now, we find the capacities in the first round
+Now, we find the capacities for the second round
+Utrecht : [0.016940784398432437, 0.007837812818218286]
+Utrecht : [0.6214089548554325, 0.771376554448113]
+Failure: 0.1
+Users are not stored in memory
+Now, we find the capacities in the first round
+Now, we find the capacities for the second round
+Overijssel : [0.01652095654409874, 0.007199794291591669]
+Overijssel : [0.6013328190623125, 0.7610139710293992]
+Users are not stored in memory
+Now, we find the capacities in the first round
+Now, we find the capacities for the second round
+Friesland : [0.019066045533097903, 0.008828612217296566]
+Friesland : [0.602261627470133, 0.7543203847020813]
+Users are not stored in memory
+Now, we find the capacities in the first round
+Now, we find the capacities for the second round
+Utrecht : [0.016940784398432437, 0.007837812818218286]
+Utrecht : [0.6214089548554325, 0.771376554448113]

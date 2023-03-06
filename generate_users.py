@@ -37,7 +37,7 @@ def generate_users(params):
     all_users = util.from_data(f'data/users/{params.userfilename}{params.seed}_all_users.p')
     xs = util.from_data(f'data/users/{params.userfilename}{params.seed}_xs.p')
     ys = util.from_data(f'data/users/{params.userfilename}{params.seed}_ys.p')
-    all_users = None
+    # all_users = None
 
     if all_users is None or 'provider' not in dir(all_users[0]):
         print('Users are not stored in memory')

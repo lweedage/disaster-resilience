@@ -1,0 +1,32 @@
+Failure: 0
+Users are not stored in memory
+Now, we find the capacities in the first round
+Now, we find the capacities for the second round
+Middelburg : [0.0, 0.0]
+Middelburg : [0.8503937007874016, 0.9343832020997376]
+Users are not stored in memory
+Now, we find the capacities in the first round
+Now, we find the capacities for the second round
+Enschede : [0.004722550177095631, 0.006493506493506494]
+Enschede : [0.6652892561983471, 0.8536009445100354]
+Users are not stored in memory
+Now, we find the capacities in the first round
+Now, we find the capacities for the second round
+Amsterdam : [0.013031914893617021, 0.007579787234042553]
+Amsterdam : [0.6969414893617021, 0.8175531914893617]
+Failure: 0.1
+Users are not stored in memory
+Now, we find the capacities in the first round
+Now, we find the capacities for the second round
+Middelburg : [0.012403493228705226, 0.007214276673838754]
+Middelburg : [0.7043412226300468, 0.8231869383622327]
+Users are not stored in memory
+Now, we find the capacities in the first round
+Now, we find the capacities for the second round
+Enschede : [0.011504232689385717, 0.007380073800738007]
+Enschede : [0.6911222053397005, 0.8241805947471239]
+Users are not stored in memory
+Now, we find the capacities in the first round
+Now, we find the capacities for the second round
+Amsterdam : [0.013031914893617021, 0.007579787234042553]
+Amsterdam : [0.6969414893617021, 0.8175531914893617]

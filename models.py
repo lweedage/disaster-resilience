@@ -169,18 +169,15 @@ def find_links(p):
     FDP = util.from_data(f'data/Realisations/{p.filename}{p.seed}_FDP.p')
     FSP = util.from_data(f'data/Realisations/{p.filename}{p.seed}_FSP.p')
     channel_link = util.from_data(f'data/Realisations/{p.filename}{p.seed}_channel_link.p')
-    interf_loss = util.from_data(f'data/Realisations/{p.filename}{p.seed}_interference_loss.p')
 
-    FDP = None
+    connections = None
+    # FDP = None
     if FDP is None:
         links = lil_matrix((p.number_of_users, p.number_of_bs))
         snrs = lil_matrix((p.number_of_users, p.number_of_bs))
         sinrs = lil_matrix((p.number_of_users, p.number_of_bs))
         channel_link = lil_matrix((p.number_of_users, p.number_of_bs))
-        capacities = np.zeros(p.number_of_users)
         FDP = np.zeros(p.number_of_users)
-        FSP = np.zeros(p.number_of_users)
-        interf_loss = np.zeros(p.number_of_users)
 
         maximum = 20
 
@@ -191,8 +188,7 @@ def find_links(p):
 
         connections = {'KPN': {'KPN': 0, 'T-Mobile': 0, 'Vodafone': 0},
                        'T-Mobile': {'KPN': 0, 'T-Mobile': 0, 'Vodafone': 0},
-                       'Vodafone': {'KPN': 0, 'T-Mobile': 0, 'Vodafone': 0}}
-        disconnected = {'KPN': 0, 'T-Mobile': 0, 'Vodafone': 0}
+                       'Vodafone': {'KPN': 0, 'T-Mobile': 0, 'Vodafone': 0}, 'no': {'KPN': 0, 'T-Mobile': 0, 'Vodafone': 0}}
 
         disconnected_users = []
         for user in p.users:
@@ -229,20 +225,16 @@ def find_links(p):
                 connections[p.BaseStations[best_bs].provider][user.provider] += 1
             elif p.back_up:
                 disconnected_users.append(user)
-                disconnected[user.provider] += 1
             else:
                 FDP[user.id] = 1
-                disconnected[user.provider] += 1
-        #
+                connections['no'][user.provider] += 1
+
         # print(connections)
         # # print([p.BaseStations[id].provider for id in range(len(p.BaseStations))])
         # print('Total number of disconnected users:', len(disconnected_users), 'out of', len(p.users))
         # print('Disconnected per MNO:', disconnected)
 
 
-        connections_disconnected = {'KPN': {'KPN': 0, 'T-Mobile': 0, 'Vodafone': 0},
-                                    'T-Mobile': {'KPN': 0, 'T-Mobile': 0, 'Vodafone': 0},
-                                    'Vodafone': {'KPN': 0, 'T-Mobile': 0, 'Vodafone': 0}}
         for user in disconnected_users:
             best_SINR = - math.inf
             best_measure = -math.inf
@@ -268,29 +260,18 @@ def find_links(p):
                         c.add_user(user.id)
                 links[user.id, best_bs] = 1
                 snrs[user.id, best_bs] = SNR
-                connections_disconnected[p.BaseStations[best_bs].provider][user.provider] += 1
+                connections[p.BaseStations[best_bs].provider][user.provider] += 1
             else:
                 FDP[user.id] = 1
+                connections['no'][user.provider] += 1
 
         # print(connections_disconnected)
         bar.finish()
 
         print('Now, we find the capacities')
-        for bs in p.BaseStations:
-            for c in bs.channels:
-                if len(c.users) > 0:
-                    # first, find the spectral efficiency of all users in this channel
-                    SE = [math.log2(1 + util.to_pwr(sinrs[user, bs.id])) for user in c.users]
-                    # then, we find the required bandwidth per user
-                    BW = [p.users[user].rate_requirement / SE[i] for i, user in zip(range(len(SE)), c.users)]
-                    # if there is more BW required than the channel has, we decrease the BW with that percentage for everyone
-                    BW = np.multiply(min(len(c.users), 1) * c.bandwidth / sum(BW), BW)
 
-                    for i, user in zip(range(len(c.users)), c.users):
-                        capacity = shannon_capacity(sinrs[user, bs.id], BW[i])
-                        capacities[user] = capacity
-                        if capacities[user] >= p.users[user].rate_requirement:
-                            FSP[user] = 1
+
+        capacities, FSP = find_capacity(p, sinrs)
 
         if p.seed == 1:
             util.to_data(links, f'data/Realisations/{p.filename}{p.seed}_links.p')
@@ -299,9 +280,28 @@ def find_links(p):
         util.to_data(capacities, f'data/Realisations/{p.filename}{p.seed}_capacities.p')
         util.to_data(FDP, f'data/Realisations/{p.filename}{p.seed}_FDP.p')
         util.to_data(FSP, f'data/Realisations/{p.filename}{p.seed}_FSP.p')
-        util.to_data(interf_loss, f'data/Realisations/{p.filename}{p.seed}_interference_loss.p')
 
-    return links, channel_link, snrs, sinrs, capacities, FDP, FSP, interf_loss
+    return links, channel_link, snrs, sinrs, capacities, FDP, FSP, connections
+
+def find_capacity(p, sinrs):
+    capacities = np.zeros(p.number_of_users)
+    FSP = np.zeros(p.number_of_users)
+    for bs in p.BaseStations:
+        for c in bs.channels:
+            if len(c.users) > 0:
+                # first, find the spectral efficiency of all users in this channel
+                SE = [math.log2(1 + util.to_pwr(sinrs[user, bs.id])) for user in c.users]
+                # then, we find the required bandwidth per user
+                BW = [p.users[user].rate_requirement / SE[i] for i, user in zip(range(len(SE)), c.users)]
+                # if there is more BW required than the channel has, we decrease the BW with that percentage for everyone
+                BW = np.multiply(min(len(c.users), 1) * c.bandwidth / sum(BW), BW)
+
+                for i, user in zip(range(len(c.users)), c.users):
+                    capacity = shannon_capacity(sinrs[user, bs.id], BW[i])
+                    capacities[user] = capacity
+                    if capacities[user] >= p.users[user].rate_requirement:
+                        FSP[user] = 1
+    return capacities, FSP
 
 def find_links_QoS(p):
     links = util.from_data(f'data/Realisations/{p.filename}{p.seed}_linksQOS.p')
@@ -311,7 +311,6 @@ def find_links_QoS(p):
     FDP = util.from_data(f'data/Realisations/{p.filename}{p.seed}_FDPQOS.p')
     FSP = util.from_data(f'data/Realisations/{p.filename}{p.seed}_FSPQOS.p')
     channel_link = util.from_data(f'data/Realisations/{p.filename}{p.seed}_channel_linkQOS.p')
-    interf_loss = util.from_data(f'data/Realisations/{p.filename}{p.seed}_interference_lossQOS.p')
 
     FDP = None
     if FDP is None:
@@ -322,7 +321,6 @@ def find_links_QoS(p):
         capacities = np.zeros(p.number_of_users)
         FDP = np.zeros(p.number_of_users)
         FSP = np.zeros(p.number_of_users)
-        interf_loss = np.zeros(p.number_of_users)
 
         maximum = 20
 
@@ -333,8 +331,8 @@ def find_links_QoS(p):
 
         connections = {'KPN': {'KPN': 0, 'T-Mobile': 0, 'Vodafone': 0},
                        'T-Mobile': {'KPN': 0, 'T-Mobile': 0, 'Vodafone': 0},
-                       'Vodafone': {'KPN': 0, 'T-Mobile': 0, 'Vodafone': 0}}
-        disconnected = {'KPN': 0, 'T-Mobile': 0, 'Vodafone': 0}
+                       'Vodafone': {'KPN': 0, 'T-Mobile': 0, 'Vodafone': 0},
+                       'no': {'KPN': 0, 'T-Mobile': 0, 'Vodafone': 0}}
 
         disconnected_users = []
         for user in p.users:
@@ -371,7 +369,7 @@ def find_links_QoS(p):
                 connections[p.BaseStations[best_bs].provider][user.provider] += 1
             else:
                 disconnected_users.append(user)
-                disconnected[user.provider] += 1
+                # connections['no'][user.provider] += 1
 
         #
         # print(connections)
@@ -381,21 +379,7 @@ def find_links_QoS(p):
 
 
         print('Now, we find the capacities in the first round')
-        for bs in p.BaseStations:
-            for c in bs.channels:
-                if len(c.users) > 0:
-                    # first, find the spectral efficiency of all users in this channel
-                    SE = [math.log2(1 + util.to_pwr(sinrs[user, bs.id])) for user in c.users]
-                    # then, we find the required bandwidth per user
-                    BW = [p.users[user].rate_requirement / SE[i] for i, user in zip(range(len(SE)), c.users)]
-                    # if there is more BW required than the channel has, we decrease the BW with that percentage for everyone
-                    BW = np.multiply(min(len(c.users), 1) * c.bandwidth / sum(BW), BW)
-
-                    for i, user in zip(range(len(c.users)), c.users):
-                        capacity = shannon_capacity(sinrs[user, bs.id], BW[i])
-                        capacities[user] = capacity
-                        if capacities[user] >= p.users[user].rate_requirement:
-                            FSP[user] = 1
+        capacites, FSP = find_capacity(p, sinrs)
 
 
 
@@ -429,29 +413,16 @@ def find_links_QoS(p):
                         c.add_user(user.id)
                 links[user.id, best_bs] = 1
                 snrs[user.id, best_bs] = SNR
-                connections_disconnected[p.BaseStations[best_bs].provider][user.provider] += 1
+                connections[p.BaseStations[best_bs].provider][user.provider] += 1
             else:
                 FDP[user.id] = 1
+                connections['no'][user.provider] += 1
 
         # print(connections_disconnected)
         bar.finish()
 
         print('Now, we find the capacities for the second round')
-        for bs in p.BaseStations:
-            for c in bs.channels:
-                if len(c.users) > 0:
-                    # first, find the spectral efficiency of all users in this channel
-                    SE = [math.log2(1 + util.to_pwr(sinrs[user, bs.id])) for user in c.users]
-                    # then, we find the required bandwidth per user
-                    BW = [p.users[user].rate_requirement / SE[i] for i, user in zip(range(len(SE)), c.users)]
-                    # if there is more BW required than the channel has, we decrease the BW with that percentage for everyone
-                    BW = np.multiply(min(len(c.users), 1) * c.bandwidth / sum(BW), BW)
-
-                    for i, user in zip(range(len(c.users)), c.users):
-                        capacity = shannon_capacity(sinrs[user, bs.id], BW[i])
-                        capacities[user] = capacity
-                        if capacities[user] >= p.users[user].rate_requirement:
-                            FSP[user] = 1
+        FSP, capacties = find_capacity(p, sinrs)
 
         if p.seed == 1:
             util.to_data(links, f'data/Realisations/{p.filename}{p.seed}_linksQOS.p')
@@ -460,6 +431,5 @@ def find_links_QoS(p):
         util.to_data(capacities, f'data/Realisations/{p.filename}{p.seed}_capacitiesQOS.p')
         util.to_data(FDP, f'data/Realisations/{p.filename}{p.seed}_FDPQOS.p')
         util.to_data(FSP, f'data/Realisations/{p.filename}{p.seed}_FSPQOS.p')
-        util.to_data(interf_loss, f'data/Realisations/{p.filename}{p.seed}_interference_lossQOS.p')
 
-    return links, channel_link, snrs, sinrs, capacities, FDP, FSP, interf_loss
+    return links, channel_link, snrs, sinrs, capacities, FDP, FSP, connections

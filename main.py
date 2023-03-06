@@ -2,12 +2,11 @@ import warnings
 
 import geopandas as gpd
 from shapely.errors import ShapelyDeprecationWarning
-import numpy as np
+
 import find_base_stations as antenna
 import generate_users
 import models
 import objects.Params as p
-import util
 
 warnings.filterwarnings("ignore", category=ShapelyDeprecationWarning)
 
@@ -19,13 +18,13 @@ municipalities = ['Middelburg', 'Maastricht', 'Groningen', 'Enschede', 'Emmen', 
 provinces = ['Overijssel', 'Friesland', 'Utrecht']
 municipalities = ['Middelburg', 'Enschede', 'Amsterdam']
 
-# provinces = ['Friesland']
-# municipalities = ['Emmen']
+# provinces = ['Noord-Holland']
+# municipalities = ['Enschede']
 
-# MNOS = [['KPN'], ['T-Mobile'], ['Vodafone'], ['KPN', 'Vodafone', 'T-Mobile']]
-# MNOS = [['KPN'], ['T-Mobile'], ['Vodafone']]
+MNOS = [['KPN'], ['T-Mobile'], ['Vodafone'], ['KPN', 'Vodafone', 'T-Mobile']]
+MNOS = [['KPN'], ['T-Mobile'], ['Vodafone']]
 # MNOS = [['KPN', 'Vodafone', 'T-Mobile']]
-MNOS = [['Vodafone', 'T-Mobile']]
+# MNOS = [['Vodafone', 'T-Mobile']]
 
 fdp_per_MNO = {MNO: list() for MNO in ['KPN', 'T-Mobile', 'Vodafone']}
 fsp_per_MNO = {MNO: list() for MNO in ['KPN', 'T-Mobile', 'Vodafone']}
@@ -33,8 +32,8 @@ fsp_per_MNO = {MNO: list() for MNO in ['KPN', 'T-Mobile', 'Vodafone']}
 radius_disaster = 0  # 0, or a value if there is a disaster in the center of the region with radius
 random_failure = 0  # BSs randomly fail with this probability
 user_increase = 0  # an increase in number of users
-back_up = True
-# back_up = False
+# back_up = True
+back_up = False
 
 # sharing = ['T-Mobile', 'Vodafone']
 sharing = MNOS[0]
@@ -43,18 +42,20 @@ radii = [500, 1000, 2500]
 increases = [50, 100, 200]
 random = [0.05, 0.1, 0.25, 0.5]
 
-max_iterations = 1
+max_iterations = 10
 
 # fig, ax = plt.subplots()
 
 zip_codes = gpd.read_file('data/square_statistics.shp')
-for random in [0, 0.1]:
-    print('Failure:', random)
+for random_failure in [0]:
+    # print('Failure:', random_failure)
     # for province in provinces:
     for municipality in municipalities:
-        #     fig, ax = plt.subplots()
+        full_connections = {'KPN': {'KPN': [], 'T-Mobile': [], 'Vodafone': []},
+                            'T-Mobile': {'KPN': [], 'T-Mobile': [], 'Vodafone': []},
+                            'Vodafone': {'KPN': [], 'T-Mobile': [], 'Vodafone': []},
+                            'no': {'KPN': [], 'T-Mobile': [], 'Vodafone': []}}
         j = 0
-        extraticks = [0, 0.4, 0.6, 0.8, 1.0]
         for mno in MNOS:
             data = []
             fdp, fsp, sat = [], [], []
@@ -68,8 +69,8 @@ for random in [0, 0.1]:
                 cities = [municipality]
                 province = None
 
-                percentage = 2/100  # percentage of active users
-                seed = iteration
+                percentage = 2 / 100  # percentage of active users
+                seed = 1  # iteration
 
                 params = p.Parameters(seed, zip_codes, mno, percentage, buffer_size=2000, city_list=cities,
                                       province=province, radius_disaster=radius_disaster, random_failure=random_failure,
@@ -77,14 +78,15 @@ for random in [0, 0.1]:
                                       sharing=sharing)
                 params = antenna.find_zip_code_region(params)
 
-        #         # FINDING USERS
+                #         # FINDING USERS
                 params = generate_users.generate_users(params)
-        #         # FINDING BSS
+                #         # FINDING BSS
                 params = antenna.load_bs(params)
-        #         # FINDING LINKS
-                links, link_channel, snr, sinr, capacity, FDP, FSP, interference_loss = models.find_links(params)
-        #         links, link_channel, snr, sinr, capacity, FDP, FSP, interference_loss = models.find_links_QoS(params)
+                #         # FINDING LINKS
 
+                links, link_channel, snr, sinr, capacity, FDP, FSP, connections = models.find_links(params)
+                # links, link_channel, snr, sinr, capacity, FDP, FSP, interference_loss, connections = models.find_links_QoS(params)
+                #
                 fraction_satisified_pop = sum(FSP) / params.number_of_users
                 fraction_disconnected_pop = sum(FDP) / params.number_of_users
                 # print(f'There are {params.number_of_bs} BSs and {params.number_of_users} users.')
@@ -101,6 +103,15 @@ for random in [0, 0.1]:
                     fdp_per_MNO[MNO].append(FDP[id])
                     fsp_per_MNO[MNO].append(FSP[id])
 
+            #     for k, v in connections.items():
+            #         for i, j in v.items():
+            #             full_connections[k][i].append(j)
+            #
+            # for k, v in full_connections.items():
+            #     for i, j in v.items():
+            #         full_connections[k][i] = sum(j)/len(j)
+            #
+            # print(full_connections)
             # util.to_data(fdp, f'data/Realisations/{params.filename}{max_iterations}_totalfdp.p')
             # util.to_data(fsp, f'data/Realisations/{params.filename}{max_iterations}_totalfsp.p')
 

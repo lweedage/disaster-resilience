@@ -1,9 +1,8 @@
-from pathlib import Path
 import os
-import pandas as pd
+from pathlib import Path
+
 import numpy as np
-import seaborn as sns
-import math
+import pandas as pd
 
 # code from Bart Meyers
 colors = ['red', 'dodgerblue', 'blueviolet', 'mediumseagreen', 'deeppink', 'coral', 'royalblue', 'midnightblue',
@@ -11,7 +10,7 @@ colors = ['red', 'dodgerblue', 'blueviolet', 'mediumseagreen', 'deeppink', 'cora
           'darkcyan', 'orangered', 'purple', 'cornflowerblue', 'saddlebrown', 'indianred', 'fuchsia', 'DarkViolet',
           'salmon', 'sandybrown', 'seagreen', 'seashell', 'sienna', 'silver', 'skyblue', 'slateblue',
           'slategray', 'snow', 'springgreen', 'steelblue', 'tan', 'teal', 'thistle', 'black', 'grey',
-          'tomato', 'turquoise', 'violet', 'wheat', 'whitesmoke', 'yellow']* 100
+          'tomato', 'turquoise', 'violet', 'wheat', 'whitesmoke', 'yellow'] * 100
 # colors = sns.color_palette("Paired", n_colors=100)
 
 pd.set_option('display.max_columns', None)
@@ -40,9 +39,9 @@ VERTICAL_BORE = np.radians(8)  # degrees
 VERTICAL_BEAMWIDTH3DB = np.radians(65)
 HORIZONTAL_BEAMWIDTH3DB = 65
 
-MINIMUM_SNR = 5 #- math.inf # 5 # dB
+MINIMUM_SNR = 5  # - math.inf # 5 # dB
 
 CUTOFF_VALUE_INTERFERENCE = 3  # the x highest signal BSs will not interfere.
 POWER_PERCENTAGE = 0.9
 
-#ASSUMPTION maybe change the power percentage!
+# ASSUMPTION maybe change the power percentage!

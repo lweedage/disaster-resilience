@@ -1,11 +1,9 @@
-import shapely.ops
+import geopandas as gpd
+import matplotlib
+import matplotlib.pyplot as plt
+from shapely.ops import unary_union
 
 import util
-import geopandas as gpd
-from shapely.ops import unary_union
-import matplotlib.pyplot as plt
-import matplotlib
-from matplotlib import cm
 
 norm = matplotlib.colors.Normalize(vmin=0, vmax=1)
 
@@ -46,26 +44,31 @@ provinces = ['Drenthe', 'Flevoland', 'Friesland', 'Gelderland', 'Groningen', 'Li
 #     users = util.from_data(f'data/users/{province}{MNO}20.330_xs.p')
 #     print('users=', len(users))
 #     print('urb=', sum(zip_code_region_data['stedelijkh'].astype('int'))/len(zip_code_region_data['stedelijkh']))
-fig, ax = plt.subplots()
 zip_codes = gpd.read_file('/home/lotte/PycharmProjects/Disaster Resilience/data/zip_codes.shp')
-zip_codes.plot(column = 'aantal_inw', ax = ax, cmap = 'viridis')
-fig.set_size_inches((12,10))
-ax.set_axis_off()
-plt.savefig('the_netherlands.png', dpi=1000, transparent=True)
+
+# fig, ax = plt.subplots()
+# zip_codes.plot(column='aantal_inw', ax=ax, cmap='plasma')
+# fig.set_size_inches((20, 24))
+# ax.set_axis_off()
+# plt.savefig('the_netherlands.png', dpi=500, transparent=True)
 
 mnos = ['KPN', 'T-Mobile', 'Vodafone']
 
-colors = {'KPN': '#00c300', 'T-Mobile': '#e20074', 'Vodafone': '#e93f3f'}
 fig, ax = plt.subplots()
 
+markers = ['o', '^', 's']
 nederland = gpd.GeoSeries(unary_union(zip_codes.geometry))
-nederland.plot(ax=ax, color = 'white')
+nederland.plot(ax=ax, color='yellow', alpha=0.1)
+colors = {'KPN': '#00c300', 'T-Mobile': '#e20074', 'Vodafone': '#e93f3f'}
 
 for province in provinces:
+    i = 0
     for mno in mnos:
         filename = f'{province}{mno}'
         x, y = util.from_data(f'data/BSs/{filename}_xs.p'), util.from_data(f'data/BSs/{filename}_ys.p')
-        plt.scatter(x, y, color = colors[mno], marker = '2', s = 1)
+        plt.scatter(x, y, color=colors[mno], marker=markers[i], s=2)
+        i += 1
 ax.set_axis_off()
-plt.savefig('BSSthe_netherlands.png', dpi=1000, transparent=True)
-
+fig.set_size_inches((24, 20))
+plt.savefig('BSSthe_netherlands.png', dpi=500, transparent=True)
+plt.show()
