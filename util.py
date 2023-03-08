@@ -34,6 +34,9 @@ def distance_3d(h1, h2, x1=None, y1=None, x2=None, y2=None, d2d=None):
 def to_pwr(db):
     return 10 ** (db / 10)
 
+def dbm_to_pwr(dbm):
+    return 10 ** ((dbm-30) / 10)
+
 def to_db(pwr):
     return 10 * math.log10(pwr)
 

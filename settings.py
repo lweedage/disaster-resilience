@@ -44,4 +44,5 @@ MINIMUM_SNR = 5  # - math.inf # 5 # dB
 CUTOFF_VALUE_INTERFERENCE = 3  # the x highest signal BSs will not interfere.
 POWER_PERCENTAGE = 0.9
 
+PRECISION_MARGIN = 10e-6 # Margin used in the calculations of FDP and FSP
 # ASSUMPTION maybe change the power percentage!

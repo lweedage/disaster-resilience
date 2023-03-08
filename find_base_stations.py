@@ -264,8 +264,8 @@ def load_bs(params):
 #     # print('4G', freq4G)
 #     # print('5G', freq5G)
 
-markers = ['o', '^', 's']
-colors = seaborn.color_palette('Magma')
+#markers = ['o', '^', 's']
+#colors = seaborn.color_palette('Magma')
 
 
 
