@@ -22,9 +22,9 @@ municipalities = ['Middelburg', 'Enschede', 'Amsterdam']
 # provinces = ['Noord-Holland']
 # municipalities = ['Enschede']
 
-MNOS = [['KPN'], ['T-Mobile'], ['Vodafone'], ['KPN', 'Vodafone', 'T-Mobile']]
-MNOS = [['KPN'], ['T-Mobile'], ['Vodafone']]
-# MNOS = [['KPN', 'Vodafone', 'T-Mobile']]
+#MNOS = [['KPN'], ['T-Mobile'], ['Vodafone'], ['KPN', 'Vodafone', 'T-Mobile']]
+#MNOS = [['KPN'], ['T-Mobile'], ['Vodafone']]
+MNOS = [['KPN', 'Vodafone', 'T-Mobile']]
 # MNOS = [['Vodafone', 'T-Mobile']]
 
 fdp_per_MNO = {MNO: list() for MNO in ['KPN', 'T-Mobile', 'Vodafone']}
@@ -35,8 +35,8 @@ fsp_per_MNO_fp = {MNO: list() for MNO in ['KPN', 'T-Mobile', 'Vodafone']}
 radius_disaster = 0  # 0, or a value if there is a disaster in the center of the region with radius
 random_failure = 0  # BSs randomly fail with this probability
 user_increase = 0  # an increase in number of users
-#back_up = True
-back_up = False
+back_up = True
+#back_up = False
 
 # sharing = ['T-Mobile', 'Vodafone']
 sharing = MNOS[0]
