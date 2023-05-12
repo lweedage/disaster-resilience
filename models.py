@@ -3,6 +3,7 @@ from scipy.sparse import lil_matrix
 
 from model_3GPP import *
 import cvxpy as cp
+import copy
 
 
 # code adapted from Bart Meyers: https://github.com/BartJM/ResilSimulator
@@ -184,7 +185,7 @@ def find_links_new(p):
     power_per_MNO_fp = util.from_data(f'data/Realisations/{p.filename}{p.seed}_power_per_MNO_fp.p')
     connections_fp = util.from_data(f'data/Realisations/{p.filename}{p.seed}_connections_fp.p')
 
-    # FDP = None
+    # FDP_fp = None
     if FDP_fp is None:
         connections = None
         connections_fp = None
@@ -457,8 +458,8 @@ def find_links_new(p):
             progressbar.Percentage(), ' ', progressbar.ETA()])
         bar.start()
 
-        connections = connections_fp
-        links = links_fp
+        connections = copy.deepcopy(connections_fp)
+        links = copy.deepcopy(links_fp)
 
         for user in p.users:
             bar.update(int(user.id))
@@ -480,6 +481,7 @@ def find_links_new(p):
                             FDP[user.id] = 1
                             links[user.id, base_station.id] = 0
                             connections[base_station.provider][user.provider] -= 1
+                            connections['no'][user.provider] += 1
             else:# Checks if any of the disconnected users can now connect to any of the BSs
                 # TODO: Do we need to restrict the new conections to certain MNOs here?
                 user_coords = (user.x, user.y)
@@ -506,6 +508,7 @@ def find_links_new(p):
                     links[user.id, best_bs] = 1
                     snrs[user.id, best_bs] = SNR
                     connections[p.BaseStations[best_bs].provider][user.provider] += 1
+                    connections['no'][user.provider] -= 1
                 else:
                     FDP[user.id] = 1
                     # connections['no'][user.provider] += 1 # it already accounted for it

@@ -11,21 +11,22 @@ import util
 
 warnings.filterwarnings("ignore", category=ShapelyDeprecationWarning)
 
-provinces = ['Drenthe', 'Flevoland', 'Friesland', 'Groningen', 'Limburg', 'Overijssel', 'Utrecht', 'Zeeland',
-             'Zuid-Holland', 'Gelderland', 'Noord-Brabant', 'Noord-Holland']
-municipalities = ['Middelburg', 'Maastricht', 'Groningen', 'Enschede', 'Emmen', 'Elburg',
-                  'Eindhoven', "'s-Gravenhage", 'Amsterdam', 'Almere']
+# provinces = ['Drenthe', 'Flevoland', 'Friesland', 'Groningen', 'Limburg', 'Overijssel', 'Utrecht', 'Zeeland',
+#              'Zuid-Holland', 'Gelderland', 'Noord-Brabant', 'Noord-Holland']
+# municipalities = ['Middelburg', 'Maastricht', 'Groningen', 'Enschede', 'Emmen', 'Elburg',
+#                   'Eindhoven', "'s-Gravenhage", 'Amsterdam', 'Almere']
 
-provinces = ['Overijssel', 'Friesland', 'Utrecht']
+# provinces = ['Overijssel', 'Friesland', 'Utrecht']
 municipalities = ['Middelburg', 'Enschede', 'Amsterdam']
+# municipalities = ['Amsterdam']
 
 # provinces = ['Noord-Holland']
 # municipalities = ['Enschede']
 
 #MNOS = [['KPN'], ['T-Mobile'], ['Vodafone'], ['KPN', 'Vodafone', 'T-Mobile']]
 #MNOS = [['KPN'], ['T-Mobile'], ['Vodafone']]
-MNOS = [['KPN', 'Vodafone', 'T-Mobile']]
-# MNOS = [['Vodafone', 'T-Mobile']]
+#MNOS = [['KPN', 'Vodafone', 'T-Mobile']]
+MNOS = [['Vodafone', 'T-Mobile']]
 
 fdp_per_MNO = {MNO: list() for MNO in ['KPN', 'T-Mobile', 'Vodafone']}
 fsp_per_MNO = {MNO: list() for MNO in ['KPN', 'T-Mobile', 'Vodafone']}
@@ -33,33 +34,35 @@ fdp_per_MNO_fp = {MNO: list() for MNO in ['KPN', 'T-Mobile', 'Vodafone']}
 fsp_per_MNO_fp = {MNO: list() for MNO in ['KPN', 'T-Mobile', 'Vodafone']}
 
 radius_disaster = 0  # 0, or a value if there is a disaster in the center of the region with radius
-random_failure = 0  # BSs randomly fail with this probability
+random_failure = 0 # 0.1  # BSs randomly fail with this probability
 user_increase = 0  # an increase in number of users
 back_up = True
-#back_up = False
+# back_up = False
 
 # sharing = ['T-Mobile', 'Vodafone']
 sharing = MNOS[0]
 
 radii = [500, 1000, 2500]
 increases = [50, 100, 200]
-random = [0.05, 0.1, 0.25, 0.5]
+#random = [0.05, 0.1, 0.25, 0.5]
+#random = [0.1]
+random = [0]
 
-max_iterations = 20
+max_iterations = 50
 
 # fig, ax = plt.subplots()
 
 zip_codes = gpd.read_file('data/square_statistics.shp')
-for random_failure in [0]:
+for random_failure in random:
     # print('Failure:', random_failure)
     # for province in provinces:
     for municipality in municipalities:
-        full_connections = {'KPN': {'KPN': [], 'T-Mobile': [], 'Vodafone': []},
-                            'T-Mobile': {'KPN': [], 'T-Mobile': [], 'Vodafone': []},
-                            'Vodafone': {'KPN': [], 'T-Mobile': [], 'Vodafone': []},
-                            'no': {'KPN': [], 'T-Mobile': [], 'Vodafone': []}}
         j = 0
         for mno in MNOS:
+            full_connections = {'KPN': {'KPN': [], 'T-Mobile': [], 'Vodafone': []},
+                                'T-Mobile': {'KPN': [], 'T-Mobile': [], 'Vodafone': []},
+                                'Vodafone': {'KPN': [], 'T-Mobile': [], 'Vodafone': []},
+                                'no': {'KPN': [], 'T-Mobile': [], 'Vodafone': []}}
             data = []
             fdp, fsp, sat = [], [], []
             fdp_fp, fsp_fp, p_per_mno, p_per_mno_fp = [], [], [], []
@@ -96,7 +99,7 @@ for random_failure in [0]:
                     links, link_channel, snr, sinr, capacity, FDP, FSP, connections = models.find_links(params)
                     # links, link_channel, snr, sinr, capacity, FDP, FSP, interference_loss, connections = models.find_links_QoS(params)
 
-                print(f'There are {params.number_of_bs} BSs and {params.number_of_users} users.')
+                print(f'There are {params.number_of_bs} BSs and {params.number_of_users} users. Iter {seed}')
                 if with_power_control:
                     FSP_fp = FSP[1]
                     FDP_fp = FDP[1]
@@ -170,15 +173,16 @@ for random_failure in [0]:
                     fdp_per_MNO[MNO].append(FDP[id])
                     fsp_per_MNO[MNO].append(FSP[id]) """
 
-            #     for k, v in connections.items():
-            #         for i, j in v.items():
-            #             full_connections[k][i].append(j)
-            #
-            # for k, v in full_connections.items():
-            #     for i, j in v.items():
-            #         full_connections[k][i] = sum(j)/len(j)
-            #
-            # print(full_connections)
+                for k, v in connections[0].items():
+                    for i, j in v.items():
+                        full_connections[k][i].append(j)
+            
+            for k, v in full_connections.items():
+                for i, j in v.items():
+                    #full_connections[k][i] = sum(j)/len(j)
+                    full_connections[k][i] = 100*(sum(j)/len(j))/(params.number_of_users/3) #percent
+            
+            print(full_connections)
             util.to_data(fdp, f'data/Realisations/{params.filename}{max_iterations}_totalfdp.p')
             util.to_data(fsp, f'data/Realisations/{params.filename}{max_iterations}_totalfsp.p')
             if with_power_control:
