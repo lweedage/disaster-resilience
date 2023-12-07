@@ -71,14 +71,13 @@ def load_bs(params):
         new_region = params.region
 
     # radios = None
-    if radios is None or all_basestations[0].provider == '':
+    if radios is None:
         print('BSs are not stored in memory')
         all_basestations = list()
         id = 0
         xs, ys = [], []
         radios = []
         all_freqs = set()
-        omnidirection = 0
 
         with open(BS_PATH) as f:
             bss = json.load(f)
@@ -129,8 +128,6 @@ def load_bs(params):
                                                        bandwidth)
                                     new_bs.frequencies.add(frequency)
                                     channel += 1
-                                else:
-                                    omnidirection += 1
 
                         if channel > 0:
                             if UMA.contains(Point(x, y)):
@@ -152,7 +149,8 @@ def load_bs(params):
                                 radios.append(bs.get("type"))
 
 
-            # bar.finish()
+            bar.finish()
+
         params.xbs = xs
         params.ybs = ys
         params.BaseStations = all_basestations
@@ -200,72 +198,37 @@ def load_bs(params):
     return params
 
 
-# if __name__ == '__main__':
-#     percentage = 2  # Three user density levels - still tbd
-#     seed = 1
-#     power3G, power4G, power5G = dict(), dict(), dict()
-#     freq3G, freq4G, freq5G = dict(), dict(), dict()
-#     for mno in ['KPN', 'T-Mobile', 'Vodafone']:
-#         freq3G[mno], freq4G[mno], freq5G[mno] = set(), set(), set()
-#         power3G[mno], power4G[mno], power5G[mno] = [], [], []
-#
-#     for province in ['Drenthe', 'Flevoland', 'Friesland', 'Groningen', 'Limburg', 'Overijssel', 'Utrecht', 'Zeeland',
-#                      'Zuid-Holland', 'Gelderland', 'Noord-Brabant', 'Noord-Holland']:
-#         # for city in ['Almere', 'Amsterdam', 'Enschede', "'s-Gravenhage", 'Elburg', 'Emmen', 'Groningen', 'Maastricht', 'Eindhoven', 'Middelburg']:
-#         for mno in [['KPN'], ['T-Mobile'], ['Vodafone']]:
-#             zip_codes = gpd.read_file('data/zip_codes_with_scenarios.shp')
-#             cities = util.find_cities(province)
-#             # province = None
-#             # cities = [city]
-#             print(province)
-#
-#             params = p.Parameters(seed, zip_codes, mno, percentage, buffer_size=None, city_list=cities,
-#                                   province=province)
-#
-#             params = find_zip_code_region(params)
-#             print(len(params.zip_code_region['postcode']), sum(params.zip_code_region['geometry'].area))
-#             params = load_bs(params)
-#             mno = mno[0]
-#
-#             for bs in params.BaseStations:
-#                 for channel in bs.channels:
-#                     if bs.radio == util.BaseStationRadioType.UMTS:
-#                         power3G[mno].append(channel.power)
-#                         freq3G[mno].add(channel.frequency / 1e6)
-#                     elif bs.radio == util.BaseStationRadioType.LTE:
-#                         power4G[mno].append(channel.power)
-#                         freq4G[mno].add(channel.frequency / 1e6)
-#                     elif bs.radio == util.BaseStationRadioType.NR:
-#                         power5G[mno].append(channel.power)
-#                         freq5G[mno].add(channel.frequency / 1e6)
-#
-#     x = np.array([1, 2, 3])
-#
-#     fig, ax = plt.subplots()
-#     data = [power3G, power4G, power5G]
-#
-#     # print(power3G, power4G, power5G)
-#     with open("power3G.txt", "w") as output:
-#         output.write(str(power3G))
-#     with open("power4G.txt", "w") as output:
-#         output.write(str(power4G))
-#     with open("power5G.txt", "w") as output:
-#         output.write(str(power5G))
-#
-#     plt.hist(data, density=True, histtype='bar', color=colors[:3], label=['3G', '4G', '5G'])
-#
-#     plt.xlabel('Power (dBW)')
-#     plt.legend()
-#
-#     plt.savefig('power.png', dpi=1000)
-#     # plt.show()
-#
-#     # print('3G', freq3G)
-#     # print('4G', freq4G)
-#     # print('5G', freq5G)
+if __name__ == '__main__':
+    percentage = 2  # Three user density levels - still tbd
+    seed = 1
+    for province in ['Amsterdam']:
 
-markers = ['o', '^', 's']
-colors = seaborn.color_palette('Magma')
+    # for province in ['Overijssel', 'Gelderland', 'Groningen', 'Limburg', 'Flevoland']:
+    # for city in ['Amsterdam', 'Utrecht', 'Groningen', 'Enschede', 'Middelburg', 'Zwolle', 'Almelo', 'Elburg']:
+        for mno in [['KPN'], ['T-Mobile'], ['Vodafone']]:
+            zip_codes = gpd.read_file('data/zip_codes.shp')
+            # cities = util.find_cities(province)
+            city = province
+            # print(cities)
+            province = None
+            cities = [city]
+            # print(province)
 
+            params = p.Parameters(seed, zip_codes, mno, percentage, buffer_size=2000, city_list=cities,
+                                  province=province)
 
+            params = find_zip_code_region(params)
+            params = load_bs(params)
+
+            print(params.number_of_bs)
+            # util.to_data(params.xbs, f'/home/lotte/PycharmProjects/national_roaming/data/{city}{mno[0]}_BS_xs.p')
+            print(len(params.xbs))
+
+            # util.to_data(params.ybs, f'/home/lotte/PycharmProjects/national_roaming/data/{city}{mno[0]}_BS_ys.p')
+
+            plt.scatter(params.xbs, params.ybs)
+        amsterdam = util.from_data(f'/home/lotte/PycharmProjects/national_roaming/data/Regions/Amsterdamregion.p')
+        print(amsterdam)
+        amsterdam.plot()
+        plt.show()
 

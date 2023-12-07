@@ -1,12 +1,11 @@
 import warnings
-
 import geopandas as gpd
 from shapely.errors import ShapelyDeprecationWarning
-
 import find_base_stations as antenna
 import generate_users
 import models
 import objects.Params as p
+import util
 
 warnings.filterwarnings("ignore", category=ShapelyDeprecationWarning)
 
@@ -19,11 +18,11 @@ provinces = ['Overijssel', 'Friesland', 'Utrecht']
 municipalities = ['Middelburg', 'Enschede', 'Amsterdam']
 
 # provinces = ['Noord-Holland']
-# municipalities = ['Enschede']
+municipalities = ['Amsterdam']
 
-MNOS = [['KPN'], ['T-Mobile'], ['Vodafone'], ['KPN', 'Vodafone', 'T-Mobile']]
-MNOS = [['KPN'], ['T-Mobile'], ['Vodafone']]
-# MNOS = [['KPN', 'Vodafone', 'T-Mobile']]
+# MNOS = [['KPN'], ['T-Mobile'], ['Vodafone'], ['KPN', 'Vodafone', 'T-Mobile']]
+# MNOS = [['KPN'], ['T-Mobile'], ['Vodafone']]
+MNOS = [['KPN', 'Vodafone', 'T-Mobile']]
 # MNOS = [['Vodafone', 'T-Mobile']]
 
 fdp_per_MNO = {MNO: list() for MNO in ['KPN', 'T-Mobile', 'Vodafone']}
@@ -42,12 +41,18 @@ radii = [500, 1000, 2500]
 increases = [50, 100, 200]
 random = [0.05, 0.1, 0.25, 0.5]
 
-max_iterations = 10
+max_iterations = 1
 
+# technologies = None #[[util.BaseStationRadioType.NR]]
+technologies = [[util.BaseStationRadioType.UMTS], [util.BaseStationRadioType.NR], [util.BaseStationRadioType.LTE]]
+areas =  None #[util.AreaType.UMI]
+# areas = [[util.AreaType.UMI], [util.AreaType.UMA], [util.AreaType.RMA]]
 # fig, ax = plt.subplots()
 
 zip_codes = gpd.read_file('data/square_statistics.shp')
-for random_failure in [0]:
+# for random_failure in [0]:
+# for area in areas:
+for technology in [None]: #technologies:
     # print('Failure:', random_failure)
     # for province in provinces:
     for municipality in municipalities:
@@ -60,6 +65,7 @@ for random_failure in [0]:
             data = []
             fdp, fsp, sat = [], [], []
             for iteration in range(max_iterations):
+                print(iteration)
                 # Retrieve zip code population + area data and make a region with specified zip codes
                 # Columns are: aantal_inw (population), stedelijkh (urbanity), postcode (zip code), geometry,
                 # popdensity (population density), municipali(city), scenario
@@ -70,12 +76,12 @@ for random_failure in [0]:
                 province = None
 
                 percentage = 2 / 100  # percentage of active users
-                seed = 1  # iteration
+                seed = iteration
 
                 params = p.Parameters(seed, zip_codes, mno, percentage, buffer_size=2000, city_list=cities,
                                       province=province, radius_disaster=radius_disaster, random_failure=random_failure,
                                       user_increase=user_increase, capacity_distribution=False, back_up=back_up,
-                                      sharing=sharing)
+                                      sharing=sharing, technology = technology, areas = areas)
                 params = antenna.find_zip_code_region(params)
 
                 #         # FINDING USERS
@@ -84,6 +90,7 @@ for random_failure in [0]:
                 params = antenna.load_bs(params)
                 #         # FINDING LINKS
 
+                #
                 links, link_channel, snr, sinr, capacity, FDP, FSP, connections = models.find_links(params)
                 # links, link_channel, snr, sinr, capacity, FDP, FSP, interference_loss, connections = models.find_links_QoS(params)
                 #
@@ -103,18 +110,18 @@ for random_failure in [0]:
                     fdp_per_MNO[MNO].append(FDP[id])
                     fsp_per_MNO[MNO].append(FSP[id])
 
-            #     for k, v in connections.items():
-            #         for i, j in v.items():
-            #             full_connections[k][i].append(j)
-            #
-            # for k, v in full_connections.items():
-            #     for i, j in v.items():
-            #         full_connections[k][i] = sum(j)/len(j)
-            #
-            # print(full_connections)
-            # util.to_data(fdp, f'data/Realisations/{params.filename}{max_iterations}_totalfdp.p')
-            # util.to_data(fsp, f'data/Realisations/{params.filename}{max_iterations}_totalfsp.p')
+                for k, v in connections.items():
+                    for i, j in v.items():
+                        full_connections[k][i].append(j)
 
+            for k, v in full_connections.items():
+                for i, j in v.items():
+                    full_connections[k][i] = sum(j)/len(j)
+
+            print(full_connections)
+
+            util.to_data(fdp, f'data/Realisations/{params.filename}{max_iterations}_totalfdp.p')
+            util.to_data(fsp, f'data/Realisations/{params.filename}{max_iterations}_totalfsp.p')
         if type(MNOS[0]) == list and len(MNOS[0]) == 1:
             lijst = [MNOS[i][0] for i in range(len(MNOS))]
         elif len(MNOS[0]) > 1:
@@ -129,8 +136,8 @@ for random_failure in [0]:
             print(municipality, ':', [sum(fdp_per_MNO[MNO]) / len(fdp_per_MNO[MNO]) for MNO in lijst])
             print(municipality, ':', [sum(fsp_per_MNO[MNO]) / len(fsp_per_MNO[MNO]) for MNO in lijst])
 
-        # util.to_data(fdp_per_MNO, f'data/Realisations/{params.filename}{max_iterations}_fdp_per_MNO.p')
-        # util.to_data(fsp_per_MNO, f'data/Realisations/{params.filename}{max_iterations}_fsp_per_MNO.p')
-
+        util.to_data(fdp_per_MNO, f'data/Realisations/{params.filename}{max_iterations}_fdp_per_MNO.p')
+        util.to_data(fsp_per_MNO, f'data/Realisations/{params.filename}{max_iterations}_fsp_per_MNO.p')
+        print(f'data/Realisations/{params.filename}{max_iterations}_fsp_per_MNO.p')
 # plt.savefig(f'{params.filename}.pdf', dpi=1000)
 # plt.show()

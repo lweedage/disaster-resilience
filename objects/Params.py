@@ -7,13 +7,22 @@ import util as util
 class Parameters:
     def __init__(self, seed, zip_codes, provider_list, percentage, buffer_size, city_list=None, province=None,
                  delta=None, radius_disaster=0, random_failure=0, user_increase=0, capacity_distribution=False,
-                 geographic_failure=False, back_up=False, sharing=None):
+                 geographic_failure=False, back_up=False, sharing=None, technology = None, areas = None):
 
-        if sharing is None and back_up:
-            sharing = ['KPN', 'T-Mobile', 'Vodafone']
         self.back_up = back_up
-        if back_up:
+        self.technology_sharing = False
+        self.area_sharing = False
+
+        if technology:
+            self.technology_sharing = True
+        if areas:
+            self.area_sharing = True
+
+        if sharing is None and (back_up or self.area_sharing or self.technology_sharing):
+            sharing = ['KPN', 'T-Mobile', 'Vodafone']
+        if back_up or self.technology_sharing or self.area_sharing:
             provider_list = sharing
+
 
         self.zip_codes = zip_codes
         self.number_of_bs = int()
@@ -31,6 +40,12 @@ class Parameters:
         self.user_increase = user_increase
         self.capacity_distribution = capacity_distribution
         self.geographic_failure = geographic_failure
+
+        self.technology = technology
+        self.areas = areas
+
+
+
 
         if province:
             self.cities = util.find_cities(province)
@@ -91,6 +106,17 @@ class Parameters:
                     self.filename += i
                     self.userfilename += i
                     self.bsfilename += i
+
+        if technology:
+            for i in technology:
+                self.filename += f'{i}'
+                self.bsfilename += f'{i}'
+
+        if areas:
+            for i in areas:
+                self.filename += f'{i}'
+                self.bsfilename += f'{i}'
+
 
         self.los_probabilities = None
         self.fading4 = None

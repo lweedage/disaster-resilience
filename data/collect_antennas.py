@@ -114,7 +114,9 @@ def fetch_slice(xmin, mapserver):
 
 
 total_results = dict()
-inp = int(input('Mapserver? can be 1, 2, 4, 5, 7, 8, 10, 11'))
+
+#mapserver 20 is "vaste verbinding"
+inp = int(input('Mapserver? can be 1, 2, 4, 5, 7, 8, 10, 11, 20'))
 
 for xmin in range(0, 300000, 5000):
     print('Fetching from x =', xmin / 1000, 'till', (xmin + 5100) / 1000, 'km')

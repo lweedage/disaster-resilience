@@ -69,7 +69,7 @@ def sinr(user, base_station, channel, params):
             interf, params = interference(params, user.id, base_station.id, channel.frequency, user_coords,
                                           channel.bs_interferers, user_height=settings.UE_HEIGHT)
             return util.to_db(util.to_pwr(power) * util.to_pwr(antenna_gain) / util.to_pwr(path_loss) / (
-                    util.to_pwr(noise) + interf)), params
+                        util.to_pwr(noise) + interf)), params
         else:
             return -math.inf, params
     else:
@@ -161,6 +161,24 @@ def interference(params, user_id, bs_id, freq, user_coords, bs_interferers, user
             return 0, params
 
 
+def conditions_true(p, userprovider, BSprovider, technology, area):
+    if p.back_up:
+        if userprovider == BSprovider:
+            return True
+    elif p.technology_sharing:
+        if userprovider == BSprovider:
+            return True
+        elif technology in p.technology:
+            return True
+    elif p.area_sharing:
+        if userprovider == BSprovider:
+            return True
+        elif area in p.areas:
+            return True
+    else:
+        return True
+
+
 def find_links(p):
     links = util.from_data(f'data/Realisations/{p.filename}{p.seed}_links.p')
     snrs = util.from_data(f'data/Realisations/{p.filename}{p.seed}_snrs.p')
@@ -171,7 +189,7 @@ def find_links(p):
     channel_link = util.from_data(f'data/Realisations/{p.filename}{p.seed}_channel_link.p')
 
     connections = None
-    # FDP = None
+    FDP = None
     if FDP is None:
         links = lil_matrix((p.number_of_users, p.number_of_bs))
         snrs = lil_matrix((p.number_of_users, p.number_of_bs))
@@ -188,7 +206,8 @@ def find_links(p):
 
         connections = {'KPN': {'KPN': 0, 'T-Mobile': 0, 'Vodafone': 0},
                        'T-Mobile': {'KPN': 0, 'T-Mobile': 0, 'Vodafone': 0},
-                       'Vodafone': {'KPN': 0, 'T-Mobile': 0, 'Vodafone': 0}, 'no': {'KPN': 0, 'T-Mobile': 0, 'Vodafone': 0}}
+                       'Vodafone': {'KPN': 0, 'T-Mobile': 0, 'Vodafone': 0},
+                       'no': {'KPN': 0, 'T-Mobile': 0, 'Vodafone': 0}}
 
         disconnected_users = []
         for user in p.users:
@@ -202,7 +221,15 @@ def find_links(p):
             for bs in BSs[:maximum]:  # assuming that the highest SINR BS will be within the closest 20 BSs
                 if bs != p.failed_BS:
                     base_station = p.BaseStations[bs]
-                    if not p.back_up or (user.provider == base_station.provider and p.back_up):
+
+                    contin = conditions_true(p, user.provider, base_station.provider, base_station.radio,
+                                             base_station.area_type)
+                    if contin:
+                    # if (not p.back_up and not p.area_sharing and not p.technology_sharing) or (
+                    #         user.provider == base_station.provider and (
+                    #         p.back_up or p.area_sharing or p.technology_sharing)) or (
+                    #         p.technology_sharing and base_station.radio in p.technology) or (
+                    #         p.area_sharing and base_station.area_type in p.areas):
                         if not p.geographic_failure or (
                                 p.geographic_failure and (base_station.x, base_station.y) != p.failed_BS_coords):
                             for channel in base_station.channels:
@@ -233,7 +260,6 @@ def find_links(p):
         # # print([p.BaseStations[id].provider for id in range(len(p.BaseStations))])
         # print('Total number of disconnected users:', len(disconnected_users), 'out of', len(p.users))
         # print('Disconnected per MNO:', disconnected)
-
 
         for user in disconnected_users:
             best_SINR = - math.inf
@@ -270,7 +296,6 @@ def find_links(p):
 
         print('Now, we find the capacities')
 
-
         capacities, FSP = find_capacity(p, sinrs)
 
         if p.seed == 1:
@@ -282,6 +307,7 @@ def find_links(p):
         util.to_data(FSP, f'data/Realisations/{p.filename}{p.seed}_FSP.p')
 
     return links, channel_link, snrs, sinrs, capacities, FDP, FSP, connections
+
 
 def find_capacity(p, sinrs):
     capacities = np.zeros(p.number_of_users)
@@ -302,6 +328,7 @@ def find_capacity(p, sinrs):
                     if capacities[user] >= p.users[user].rate_requirement:
                         FSP[user] = 1
     return capacities, FSP
+
 
 def find_links_QoS(p):
     links = util.from_data(f'data/Realisations/{p.filename}{p.seed}_linksQOS.p')
@@ -377,11 +404,8 @@ def find_links_QoS(p):
         # print('Total number of disconnected users:', len(disconnected_users), 'out of', len(p.users))
         # print('Disconnected per MNO:', disconnected)
 
-
         print('Now, we find the capacities in the first round')
         capacites, FSP = find_capacity(p, sinrs)
-
-
 
         connections_disconnected = {'KPN': {'KPN': 0, 'T-Mobile': 0, 'Vodafone': 0},
                                     'T-Mobile': {'KPN': 0, 'T-Mobile': 0, 'Vodafone': 0},
@@ -396,7 +420,8 @@ def find_links_QoS(p):
                 base_station = p.BaseStations[bs]
                 if base_station.provider != user.provider:
                     for channel in base_station.channels:
-                        if sum([FSP[u] for u in channel.users]) == len(channel.users): #ensure that the users that are connected are satisfied. TODO still could happen that after adding a user they are not satisfied any more...
+                        if sum([FSP[u] for u in channel.users]) == len(
+                                channel.users):  # ensure that the users that are connected are satisfied. TODO still could happen that after adding a user they are not satisfied any more...
                             SINR, p = sinr(user, base_station, channel, p)
                             # a user connects to the BS with highest SINR/degree
                             if SINR / max(1, len(channel.users)) > best_measure and SINR >= settings.MINIMUM_SNR:

@@ -99,8 +99,8 @@ NR_fallback_QOS_fsp = {'Middelburg': [0.8322309711286089, 0.8498687664041995, 0.
                        'Utrecht': [0.6750239145863548, 0.6320199339648841, 0.7583031443823866]}
 
 
-cities = ['Overijssel', 'Friesland', 'Utrecht']
-# cities = ['Middelburg', 'Enschede', 'Amsterdam']
+# cities = ['Overijssel', 'Friesland', 'Utrecht']
+cities = ['Middelburg', 'Enschede', 'Amsterdam']
 MNOs = ['KPN', 'T-Mobile', 'Vodafone']
 
 positions = [1, 2, 3, 4, 5, 6, 8, 9, 10, 11, 12, 13, 15, 16, 17, 18, 19, 20]
@@ -116,7 +116,7 @@ xticks = [3.5, 10.5, 17.5]
 patterns = ["///", "O", "|", "-", "+", "x", "o", "O", ".", "*"]
 
 FDPFSP = 'FDP'
-labels = ['no cooperation', 'NR-full', 'NR-fallback', 'NR-fallback-QOS', 'NR-fallback 1&3']
+labels = ['no cooperation', 'NR-full', 'NR-fallback', 'NR-fallback 1&3']
 
 max_x = 0.2
 
@@ -129,14 +129,14 @@ for x in range(len(cities)):
 y_axes = {'KPN': [i + 0.2 for i in range(len(cities))], 'T-Mobile': [i for i in range(len(cities))],
           'Vodafone': [i - 0.2 for i in range(len(cities))]}
 
-for i, data in zip(range(4), [no_cooperation_fdp, NR_full_fdp, NR_fallback_fdp, NR_fallback_QOS_fdp]):
+for i, data in zip(range(3), [no_cooperation_fdp, NR_full_fdp, NR_fallback_fdp]):
     for j in range(len(MNOs)):
         vals = [v[j] for k, v in data.items() if k in cities]
         if j == 0:
             plt.scatter(vals, y_axes[MNOs[j]], color=util.get_color(i), alpha=0.5, marker=markers[i], label=labels[i])
         else:
             plt.scatter(vals, y_axes[MNOs[j]], color=util.get_color(i), alpha=0.5, marker=markers[i])
-i = 4
+i = 3
 for j, index in zip([0, 1], [1, 2]):
     vals = [v[j] for k, v in two_NR_fallback_fdp.items() if k in cities]
     if j == 0:
@@ -193,14 +193,14 @@ for x in range(len(cities)):
 y_axes = {'KPN': [i + 0.2 for i in range(len(cities))], 'T-Mobile': [i for i in range(len(cities))],
           'Vodafone': [i - 0.2 for i in range(len(cities))]}
 
-for i, data in zip(range(4), [no_cooperation_fsp, NR_full_fsp, NR_fallback_fsp, NR_fallback_QOS_fsp]):
+for i, data in zip(range(3), [no_cooperation_fsp, NR_full_fsp, NR_fallback_fsp]):
     for j in range(len(MNOs)):
         vals = [v[j] for k, v in data.items() if k in cities]
         if j == 0:
             plt.scatter(vals, y_axes[MNOs[j]], color=util.get_color(i), alpha=0.5, marker=markers[i], label=labels[i])
         else:
             plt.scatter(vals, y_axes[MNOs[j]], color=util.get_color(i), alpha=0.5, marker=markers[i])
-i = 4
+i = 3
 for j, index in zip([0, 1], [1, 2]):
     vals = [v[j] for k, v in two_NR_fallback_fsp.items() if k in cities]
     if j == 0:
