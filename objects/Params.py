@@ -153,12 +153,17 @@ class Parameters:
         self.fading78 = scipy.sparse.lil_matrix((self.number_of_users, self.number_of_bs))
         self.fading8 = scipy.sparse.lil_matrix((self.number_of_users, self.number_of_bs))
 
-
         self.path_loss = dict()
         self.interference = dict()
 
         for freq in self.all_freqs:
             self.path_loss[freq] = scipy.sparse.lil_matrix((self.number_of_users, self.number_of_bs))
+            self.interference[freq] = scipy.sparse.lil_matrix((self.number_of_users, self.number_of_bs))
+
+    def clear_interference(self):
+        self.interference = dict()
+        for freq in self.all_freqs:
+            #self.path_loss[freq] = scipy.sparse.lil_matrix((self.number_of_users, self.number_of_bs))
             self.interference[freq] = scipy.sparse.lil_matrix((self.number_of_users, self.number_of_bs))
 
     def failure_update(self, failed_bs):

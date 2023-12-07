@@ -54,7 +54,8 @@ class Channel:
         self.BS_id = BS_id
         self.height = height
         self.frequency = frequency
-        self.power = power
+        self.power = power # Can be changed according to the load
+        self.max_power = power # Should not be changed
         self.main_direction = main_direction
         self.bandwidth = bandwidth
         self.beamwidth = beamwidth
@@ -68,3 +69,17 @@ class Channel:
 
     def add_user(self, user):
         self.users.append(user)
+
+    def clear_users(self):
+        self.users = list()
+
+    def update_power(self, power_in_W):
+        if power_in_W <= 0:
+            if power_in_W < 0:
+                print(f"Failed to update channel {self.id} from BS {self.BS_id} with negative power ({power_in_W} W), fallback to 0 W (-inf dB).")
+            self.power = float('-inf')
+        elif util.to_db(power_in_W) <= self.max_power: # if the power is in the correct range, update it.
+            self.power = util.to_db(power_in_W)
+        else:
+            print(f"Failed to update channel {self.id} power from BS {self.BS_id}, fallback to max_power.")
+            self.power = self.max_power

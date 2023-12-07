@@ -203,6 +203,7 @@ if __name__ == '__main__':
     seed = 1
     for province in ['Amsterdam']:
 
+
     # for province in ['Overijssel', 'Gelderland', 'Groningen', 'Limburg', 'Flevoland']:
     # for city in ['Amsterdam', 'Utrecht', 'Groningen', 'Enschede', 'Middelburg', 'Zwolle', 'Almelo', 'Elburg']:
         for mno in [['KPN'], ['T-Mobile'], ['Vodafone']]:
@@ -213,6 +214,7 @@ if __name__ == '__main__':
             province = None
             cities = [city]
             # print(province)
+
 
             params = p.Parameters(seed, zip_codes, mno, percentage, buffer_size=2000, city_list=cities,
                                   province=province)
