@@ -24,5 +24,5 @@ The simulations are done via running `main.py`. First, we initialize all paramet
 ## Other scripts
 There are some other scripts in the repository that are used to calculate the S(I)NR at every location in a certain region (`main_SNR.py`), calculate the impact of a single BS failure (`main_BSfailure.py`) or plot some other stuff.
 
-
-
+## Interface
+On www.lotteweedage.nl/interface, you can find the visualization of our simulator.
